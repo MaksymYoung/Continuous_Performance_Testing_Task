@@ -1,0 +1,196 @@
+// Jenkinsfile - Gatling (PerfTestSimulation, Maven) on Linux/Ubuntu
+// sh/bash only, no PowerShell. Same idea as the JMeter Jenkinsfile:
+//   ramp-up -> steady state, one overall HTML report (no separate steady-state report).
+// The project is copied into the Jenkins container by deploy_gatling_ubuntu.sh.
+
+pipeline {
+    agent any
+
+    options {
+        timeout(time: 60, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        disableConcurrentBuilds()
+    }
+
+    environment {
+        // ---- Paths inside the Jenkins container (Linux) ----
+        PROJECT_DIR  = '/var/jenkins_home/gatling_project'   // pom.xml and src/ are copied here
+        JAVA_HOME    = '/var/jenkins_home/jdk21'             // JDK 21 (installed automatically if missing)
+        MAVEN_HOME   = '/var/jenkins_home/maven'             // Apache Maven (installed automatically if missing)
+        MAVEN_VERSION = '3.9.9'
+
+        // ---- Target application ----
+        // Inside the container "localhost" is the container itself, not the host!
+        // APP is the Docker host gateway: reachable from inside the Jenkins container.
+        APP          = '172.17.0.1'
+        APP_PORT     = '80'
+        // The app (WordPress) redirects to its siteurl unless the Host header is "localhost" (same as in the JMeter test)
+        SITE_URL     = 'http://localhost'
+        HOST_HEADER  = 'localhost'
+
+        // ---- Load model ----
+        USERS_MIN          = '3'
+        USERS_MAX          = '5'
+        TOTAL_DURATION_SEC = '600'
+        RAMP_UP_SEC        = '120'
+        TT_MIN             = '2000'
+        TT_MAX             = '5000'
+        CONNECT_TIMEOUT    = '5000'
+        RESPONSE_TIMEOUT   = '10000'
+        MIN_SUCCESS_PCT    = '99'
+
+        // ---- Results directory of the current build (relative to workspace) ----
+        RUN_DIR      = "results/build-${BUILD_NUMBER}"
+
+        MAVEN_OPTS        = '-Xms512m -Xmx2g'
+        JAVA_TOOL_OPTIONS = '-Duser.language=en -Duser.country=US -Djava.net.preferIPv4Stack=true'
+    }
+
+    stages {
+
+        stage('Prepare') {
+            steps {
+                sh '''#!/bin/bash
+set -euo pipefail
+
+echo "== Environment check =="
+whoami; uname -a
+
+[ -f "$PROJECT_DIR/pom.xml" ] || { echo "Missing $PROJECT_DIR/pom.xml - run deploy_gatling_ubuntu.sh first"; exit 1; }
+
+# ---- JDK 21 (pom.xml: maven.compiler.release=21) ----
+if [ ! -x "$JAVA_HOME/bin/java" ]; then
+  echo "JDK 21 not found, downloading Temurin 21 into $JAVA_HOME"
+  case "$(uname -m)" in x86_64) A=x64;; aarch64) A=aarch64;; *) echo "Unsupported CPU: $(uname -m)"; exit 1;; esac
+  mkdir -p "$JAVA_HOME"
+  curl -fsSL "https://api.adoptium.net/v3/binary/latest/21/ga/linux/$A/jdk/hotspot/normal/eclipse" \\
+    | tar -xz -C "$JAVA_HOME" --strip-components=1
+fi
+export PATH="$JAVA_HOME/bin:$PATH"
+"$JAVA_HOME/bin/java" -version 2>&1 | grep -v "Picked up" | head -1
+
+# ---- Maven ----
+if [ ! -x "$MAVEN_HOME/bin/mvn" ]; then
+  echo "Maven not found, downloading Apache Maven $MAVEN_VERSION into $MAVEN_HOME"
+  mkdir -p "$MAVEN_HOME"
+  curl -fsSL "https://archive.apache.org/dist/maven/maven-3/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.tar.gz" \\
+    | tar -xz -C "$MAVEN_HOME" --strip-components=1
+fi
+"$MAVEN_HOME/bin/mvn" -version | head -1
+
+# ---- Fresh copy of the project into the workspace (without old results) ----
+rm -rf "$WORKSPACE/project" "$WORKSPACE/$RUN_DIR"
+mkdir -p "$WORKSPACE/project" "$WORKSPACE/$RUN_DIR"
+cp -a "$PROJECT_DIR/." "$WORKSPACE/project/"
+rm -rf "$WORKSPACE/project/target"
+ls -la "$WORKSPACE/project"
+'''
+            }
+        }
+
+        // Fail fast instead of running 10 minutes of 100% errors when the target is unreachable
+        stage('Check target') {
+            steps {
+                sh '''#!/bin/bash
+set -uo pipefail
+URL="http://$APP:$APP_PORT/"
+echo "Checking $URL (Host: $HOST_HEADER) from inside the Jenkins container ..."
+BODY=$(curl -s -H "Host: $HOST_HEADER" --connect-timeout 5 --max-time 10 -w '\\nHTTP_CODE=%{http_code}' "$URL" || true)
+CODE=$(echo "$BODY" | tail -n 1 | sed 's/HTTP_CODE=//')
+if [ -z "$CODE" ] || [ "$CODE" = "000" ]; then
+  echo "ERROR: $URL is not reachable from the container (host not resolved or connection refused/blocked)."
+  echo "Set APP in the Jenkinsfile to an address that works from inside the container."
+  exit 1
+fi
+echo "Target responded with HTTP $CODE"
+[ "$CODE" = "200" ] || { echo "ERROR: expected HTTP 200, got $CODE"; exit 1; }
+grep -q "Performance testing Essentials" <<<"$BODY" || { echo "ERROR: the home page does not contain 'Performance testing Essentials'"; exit 1; }
+echo "Home page content is OK"
+'''
+            }
+        }
+
+        stage('Run Gatling test') {
+            steps {
+                sh '''#!/bin/bash
+set -uo pipefail
+export PATH="$JAVA_HOME/bin:$MAVEN_HOME/bin:$PATH"
+
+USERS=$USERS_MAX
+START_USERS=$USERS_MIN
+HOLD=$(( TOTAL_DURATION_SEC - RAMP_UP_SEC ))
+TT_CENTER=$(( (TT_MIN + TT_MAX) / 2 ))
+TT_DEV=$(( (TT_MAX - TT_MIN) / 2 ))
+STAMP=$(date +%Y%m%d-%H%M)
+
+echo "Target: $APP | $START_USERS -> $USERS VU | ramp ${RAMP_UP_SEC}s | steady state ${HOLD}s"
+echo "Expected duration: about $(( TOTAL_DURATION_SEC / 60 )) min (plus first-run dependency download)"
+
+cd "$WORKSPACE/project"
+
+mvn -B -ntp gatling:test \\
+  "-DBASE_URL=$SITE_URL" \\
+  "-DTARGET_URL=http://$APP:$APP_PORT" \\
+  "-DHOST_HEADER=$HOST_HEADER" \\
+  "-DtestTitle=test-$STAMP" \\
+  "-Dgatling.runDescription=test-$STAMP" \\
+  "-DCLOSED_START_USERS=$START_USERS" \\
+  "-DCLOSED_USERS=$USERS" \\
+  "-DRAMP_UP_PERIOD=$RAMP_UP_SEC" \\
+  "-DTEST_HOLD_SEC=$HOLD" \\
+  "-DSTEP_TIMEOUT_MS=$RESPONSE_TIMEOUT" \\
+  "-Dthink_time_center=$TT_CENTER" \\
+  "-Dthink_time_deviation=$TT_DEV" \\
+  "-Dgatling.socket.connectTimeout=$CONNECT_TIMEOUT" \\
+  "-Dgatling.http.requestTimeout=$RESPONSE_TIMEOUT" \\
+  "-DASSERTION_TYPE=responseTime" \\
+  "-DSUCCESSFUL_REQUESTS_PERCENT=$MIN_SUCCESS_PCT" 2>&1 | tee "$WORKSPACE/$RUN_DIR/console.log"
+
+RC=${PIPESTATUS[0]}
+if [ "$RC" -ne 0 ]; then echo "Gatling finished with exit code $RC (simulation error or failed assertions). See console.log"; exit "$RC"; fi
+'''
+            }
+            post {
+                always {
+                    // Copy the latest Gatling HTML report to results/build-N/report_full (also when assertions failed)
+                    sh '''#!/bin/bash
+cd "$WORKSPACE/project" 2>/dev/null || exit 0
+LATEST=$(ls -dt target/gatling/*/ 2>/dev/null | head -n 1)
+if [ -n "$LATEST" ]; then
+  echo "Latest Gatling report: $LATEST"
+  cp -a "$LATEST" "$WORKSPACE/$RUN_DIR/report_full"
+  tar czf "$WORKSPACE/$RUN_DIR/report_full.tar.gz" -C "$WORKSPACE/$RUN_DIR" report_full
+else
+  echo "No Gatling report was generated."
+fi
+[ -f src/test/execution.log ] && cp src/test/execution.log "$WORKSPACE/$RUN_DIR/execution.log"
+exit 0
+'''
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // The files themselves in Build Artifacts
+            archiveArtifacts artifacts: 'results/build-*/**', allowEmptyArchive: true
+
+            // HTML report link in the left menu of the build page (requires the "HTML Publisher" plugin)
+            script {
+                try {
+                    publishHTML(target: [
+                        reportDir: "${env.RUN_DIR}/report_full",
+                        reportFiles: 'index.html',
+                        reportName: 'Gatling Report',
+                        keepAll: true, alwaysLinkToLastBuild: true, allowMissing: true
+                    ])
+                } catch (Throwable t) {
+                    echo "publishHTML is not available (install the HTML Publisher plugin): ${t.message}"
+                }
+            }
+        }
+        success { echo 'Test completed. Report: build menu -> Gatling Report / Build Artifacts.' }
+        failure { echo 'Failed. See Console Output and console.log in results/build-N/ artifacts.' }
+    }
+}

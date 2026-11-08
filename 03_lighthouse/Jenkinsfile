@@ -1,0 +1,162 @@
+// Jenkinsfile - Lighthouse user flow (performance-testing-essentials.js) on Linux/Ubuntu
+// sh/bash only, no PowerShell. Same logic as the former run_lighthouse.ps1:
+//   N loops of the user flow -> one averaged HTML report (summary) + per-run reports. No InfluxDB.
+
+pipeline {
+    agent any
+
+    options {
+        timeout(time: 60, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+    }
+
+    environment {
+        // ---- Paths inside the Jenkins container (Linux) ----
+        PROJECT_DIR   = '/var/jenkins_home/lighthouse_project'  // sources + node_modules (created by deploy_lighthouse_ubuntu.sh)
+
+        // ---- Target application ----
+        // The app (WordPress) redirects to http://localhost/, and inside the container "localhost" is the container itself.
+        // So the URL stays "localhost" and Chrome is told to resolve it to the Docker host gateway.
+        BASE_URL            = 'http://localhost'
+        HOST_RESOLVER_RULES = 'MAP localhost 172.17.0.1'   // 172.17.0.1 = Docker host gateway, reachable from the container
+        APP_CHECK_URL       = 'http://172.17.0.1:80/'      // pre-flight check, sent with "Host: localhost"
+        SCENARIO            = 'order-flow'
+
+        // ---- Load model (same as in run_lighthouse.ps1) ----
+        LOOPS         = '10'      // number of flow runs
+        PAUSE_SECONDS = '5'       // pause between runs
+
+        // ---- Results directory of the current build (relative to workspace) ----
+        RUN_DIR       = "results/build-${BUILD_NUMBER}"
+    }
+
+    stages {
+
+        stage('Prepare') {
+            steps {
+                sh '''#!/bin/bash
+set -euo pipefail
+
+echo "== Environment check =="
+whoami; uname -a
+command -v node >/dev/null || { echo "Node.js not found - run deploy_lighthouse_ubuntu.sh"; exit 1; }
+NODE_MAJOR=$(node --version | sed 's/^v//; s/\\..*//')
+echo "node $(node --version), npm $(npm --version)"
+[ "$NODE_MAJOR" -ge 18 ] || { echo "Node 18+ is required (found $NODE_MAJOR)"; exit 1; }
+
+[ "$LOOPS" -ge 1 ] || { echo "LOOPS must be 1 or greater"; exit 1; }
+[ -f "$PROJECT_DIR/performance-testing-essentials.js" ] || { echo "Missing $PROJECT_DIR/performance-testing-essentials.js - run deploy_lighthouse_ubuntu.sh"; exit 1; }
+[ -d "$PROJECT_DIR/node_modules/lighthouse" ] && [ -d "$PROJECT_DIR/node_modules/puppeteer" ] \\
+  || { echo "lighthouse/puppeteer are not installed in $PROJECT_DIR/node_modules - run deploy_lighthouse_ubuntu.sh"; exit 1; }
+
+# Start from a clean state. Sources are copied to the workspace (small); node_modules (Chromium, ~300 MB) is linked, not copied.
+rm -rf "$WORKSPACE/project" "$WORKSPACE/$RUN_DIR"
+mkdir -p "$WORKSPACE/project" "$WORKSPACE/$RUN_DIR"
+cp -r "$PROJECT_DIR/performance-testing-essentials.js" "$PROJECT_DIR/aggregate-lighthouse.js" \\
+      "$PROJECT_DIR/package.json" "$PROJECT_DIR/templates" "$WORKSPACE/project/"
+ln -s "$PROJECT_DIR/node_modules" "$WORKSPACE/project/node_modules"
+ls -la "$WORKSPACE/project"
+'''
+            }
+        }
+
+        // Fail fast instead of running many minutes of failing flows when the target is unreachable
+        stage('Check target') {
+            steps {
+                sh '''#!/bin/bash
+set -uo pipefail
+echo "Checking $APP_CHECK_URL from inside the Jenkins container ..."
+# The app (WordPress) redirects to http://localhost/ unless the Host header is "localhost"
+CODE=$(curl -s -o /dev/null -w '%{http_code}' -H "Host: localhost" --connect-timeout 5 --max-time 10 "$APP_CHECK_URL")
+if [ -z "$CODE" ] || [ "$CODE" = "000" ]; then
+  echo "ERROR: $APP_CHECK_URL is not reachable from the container (connection refused/blocked)."
+  echo "Is the wp container running (docker ps)? Is 172.17.0.1 the Docker host gateway? Fix APP_CHECK_URL and HOST_RESOLVER_RULES."
+  exit 1
+fi
+echo "Target responded with HTTP $CODE"
+[ "$CODE" = "200" ] || echo "WARNING: expected HTTP 200, got $CODE"
+'''
+            }
+        }
+
+        stage('Run Lighthouse flows') {
+            steps {
+                script {
+                    // exit code 3 = some runs failed but at least one succeeded -> build becomes UNSTABLE
+                    def rc = sh(returnStatus: true, script: '''#!/bin/bash
+set -uo pipefail
+
+cd "$WORKSPACE/project"
+export OUT_DIR="$WORKSPACE/$RUN_DIR"
+export PATH="/usr/local/bin:$PATH"
+
+echo "Target: $BASE_URL (resolved by Chrome via: $HOST_RESOLVER_RULES) | scenario: $SCENARIO | $LOOPS loop(s), pause ${PAUSE_SECONDS}s"
+
+FAILED=()
+for i in $(seq 1 "$LOOPS"); do
+  echo ""
+  echo "=== Run $i of $LOOPS ==="
+  RUN_INDEX="$i" node performance-testing-essentials.js 2>&1 | tee -a "$OUT_DIR/console.log"
+  RC=${PIPESTATUS[0]}
+  if [ "$RC" -ne 0 ]; then
+    echo "WARNING: run $i failed with exit code $RC"
+    FAILED+=("$i")
+  fi
+  [ "$i" -lt "$LOOPS" ] && sleep "$PAUSE_SECONDS"
+done
+
+OK=$(( LOOPS - ${#FAILED[@]} ))
+if [ "$OK" -lt 1 ]; then echo "All $LOOPS runs failed, nothing to aggregate."; exit 1; fi
+
+echo ""
+echo "Building the averaged report from $OK successful run(s)..."
+node aggregate-lighthouse.js "$OUT_DIR" 2>&1 | tee -a "$OUT_DIR/console.log"
+[ "${PIPESTATUS[0]}" -eq 0 ] || { echo "aggregate-lighthouse.js failed"; exit 1; }
+
+if [ "${#FAILED[@]}" -gt 0 ]; then
+  echo "Failed runs: ${FAILED[*]} - they are NOT included in the summary."
+  exit 3
+fi
+echo "Done: $OK of $LOOPS runs succeeded."
+''')
+                    if (rc == 3) {
+                        unstable('Some Lighthouse runs failed - see Console Output. The summary contains only successful runs.')
+                    } else if (rc != 0) {
+                        error("Lighthouse run failed (exit code ${rc}).")
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // Raw Lighthouse artifacts (traces, devtools logs) are big -> one tar.gz instead of hundreds of files
+            sh '''#!/bin/bash
+cd "$WORKSPACE/$RUN_DIR" 2>/dev/null || exit 0
+ls -d performance-testing-essentials-artifacts* >/dev/null 2>&1 \\
+  && tar czf lighthouse-raw-artifacts.tar.gz performance-testing-essentials-artifacts* \\
+  && rm -rf performance-testing-essentials-artifacts*
+exit 0
+'''
+            archiveArtifacts artifacts: 'results/build-*/**', allowEmptyArchive: true, fingerprint: true
+
+            // HTML report link in the left menu of the build page (requires the "HTML Publisher" plugin)
+            script {
+                try {
+                    publishHTML(target: [
+                        reportDir: "${env.RUN_DIR}",
+                        reportFiles: 'performance-testing-essentials.summary.html',
+                        reportName: 'Lighthouse Report',
+                        keepAll: true, alwaysLinkToLastBuild: true, allowMissing: true
+                    ])
+                } catch (Throwable t) {
+                    echo "publishHTML is not available (install the HTML Publisher plugin): ${t.message}"
+                }
+            }
+        }
+        success  { echo 'Test completed. Report: build menu -> Lighthouse Report / Build Artifacts.' }
+        unstable { echo 'Some runs failed. Report: build menu -> Lighthouse Report. See Console Output.' }
+        failure  { echo 'Failed. See Console Output and console.log / order-confirmation-timeout*.png in results/build-N/ artifacts.' }
+    }
+}

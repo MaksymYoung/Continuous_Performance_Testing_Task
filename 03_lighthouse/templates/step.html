@@ -1,0 +1,17 @@
+<!--
+  Per-step section of the averaged Lighthouse report.
+  Placeholders: title, modeTag, statRows, runCount, runsHead, runRows.
+-->
+<section>
+  <h2>{{title}}{{modeTag}}</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Metric</th><th>Runs</th><th>Median</th><th>Mean</th><th>Min</th><th>Max</th><th>Std dev</th></tr></thead>
+    <tbody>{{statRows}}</tbody>
+  </table></div>
+  <details><summary>All {{runCount}} runs for this step</summary>
+    <div class="scroll"><table>
+      <thead><tr><th>Run</th>{{runsHead}}</tr></thead>
+      <tbody>{{runRows}}</tbody>
+    </table></div>
+  </details>
+</section>

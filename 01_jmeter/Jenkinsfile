@@ -1,0 +1,165 @@
+// Jenkinsfile - JMeter (PerformanceEssentials.jmx) on Linux/Ubuntu
+// sh/bash only, no PowerShell. Load model is the same as in run_jmeter.ps1:
+//   ramp-up -> steady state -> shutdown, one overall HTML report.
+
+pipeline {
+    agent any
+
+    options {
+        timeout(time: 40, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+    }
+
+    environment {
+        // ---- Paths inside the Jenkins container (Linux) ----
+        PROJECT_DIR  = '/var/jenkins_home/perf_project'      // jmx and csv/ are copied here
+        JMETER_HOME  = '/opt/apache-jmeter'                  // JMeter 5.6.3 + jpgc-casutg plugin
+        JOLOKIA_JAR  = '/opt/monitoring/jolokia-agent.jar'   // optional: the agent is skipped if the file does not exist
+
+        // ---- Target application ----
+        // Inside the container "localhost" is the container itself, not Windows!
+        // Docker Desktop: host.docker.internal. Otherwise use the IP/hostname of the machine running the application.
+        APP          = '172.17.0.1'             // Docker host gateway: reachable from inside the Jenkins container
+        APP_PORT     = '80'                     // must match "port" in the JMX (80)
+
+        // ---- Load model (same as in run_jmeter.ps1) ----
+        USERS_MIN          = '3'
+        USERS_MAX          = '5'
+        USERS              = '4'
+        TOTAL_DURATION_SEC = '600'
+        RAMP_UP_SEC        = '30'
+        SHUTDOWN_SEC       = '10'
+        TT_MIN             = '2000'
+        TT_MAX             = '5000'
+        CONNECT_TIMEOUT    = '5000'
+        RESPONSE_TIMEOUT   = '10000'
+
+        // ---- Results directory of the current build (relative to workspace) ----
+        RUN_DIR      = "results/build-${BUILD_NUMBER}"
+    }
+
+    stages {
+
+        stage('Prepare') {
+            steps {
+                sh '''#!/bin/bash
+set -euo pipefail
+
+echo "== Environment check =="
+whoami; uname -a; java -version 2>&1 | head -1
+
+if [ "$USERS" -lt "$USERS_MIN" ] || [ "$USERS" -gt "$USERS_MAX" ]; then
+  echo "USERS=$USERS is outside the allowed range $USERS_MIN..$USERS_MAX"; exit 1
+fi
+
+[ -x "$JMETER_HOME/bin/jmeter" ]                || { echo "JMeter not found: $JMETER_HOME/bin/jmeter"; exit 1; }
+[ -f "$PROJECT_DIR/PerformanceEssentials.jmx" ] || { echo "Missing $PROJECT_DIR/PerformanceEssentials.jmx"; exit 1; }
+
+# The JMX looks for csv/checkout.csv relative to its own folder -> copy to workspace together with csv/
+# Start from a clean state: JMeter refuses to write to a non-empty results.jtl / existing report folder
+rm -rf "$WORKSPACE/project" "$WORKSPACE/$RUN_DIR"
+mkdir -p "$WORKSPACE/project" "$WORKSPACE/$RUN_DIR"
+cp "$PROJECT_DIR/PerformanceEssentials.jmx" "$WORKSPACE/project/"
+[ -d "$PROJECT_DIR/csv" ] && cp -r "$PROJECT_DIR/csv" "$WORKSPACE/project/csv"
+ls -la "$WORKSPACE/project"
+'''
+            }
+        }
+
+        // Fail fast instead of running 10 minutes of 100% errors when the target is unreachable
+        stage('Check target') {
+            steps {
+                sh '''#!/bin/bash
+set -uo pipefail
+URL="http://$APP:$APP_PORT/"
+echo "Checking $URL from inside the Jenkins container ..."
+# The app (WordPress) redirects to http://localhost/ unless the Host header is "localhost" - same header as in the JMX
+CODE=$(curl -s -o /dev/null -w '%{http_code}' -H "Host: localhost" --connect-timeout 5 --max-time 10 "$URL")
+if [ -z "$CODE" ] || [ "$CODE" = "000" ]; then
+  echo "ERROR: $URL is not reachable from the container (host not resolved or connection refused/blocked)."
+  echo "Set APP in the Jenkinsfile to an address that works from inside the container."
+  exit 1
+fi
+echo "Target responded with HTTP $CODE"
+[ "$CODE" = "200" ] || echo "WARNING: expected HTTP 200, got $CODE"
+'''
+            }
+        }
+
+        stage('Run JMeter test') {
+            steps {
+                sh '''#!/bin/bash
+set -uo pipefail
+
+HOLD=$(( TOTAL_DURATION_SEC - RAMP_UP_SEC - SHUTDOWN_SEC ))
+TT_CENTER=$(( (TT_MIN + TT_MAX) / 2 ))
+TT_DEV=$(( (TT_MAX - TT_MIN) / 2 ))
+STAMP=$(date +%Y%m%d-%H%M)
+
+JVM_ARGS="-Xms1g -Xmx2g -Djava.net.preferIPv4Stack=true"
+if [ -f "$JOLOKIA_JAR" ]; then
+  JVM_ARGS="$JVM_ARGS -javaagent:$JOLOKIA_JAR=host=127.0.0.1,port=8778"
+fi
+export JVM_ARGS
+
+echo "Target: $APP | $USERS VU | ramp ${RAMP_UP_SEC}s | hold ${HOLD}s | shutdown ${SHUTDOWN_SEC}s"
+echo "Expected duration: $(( TOTAL_DURATION_SEC / 60 )) min"
+
+cd "$WORKSPACE/$RUN_DIR"
+rm -rf results.jtl report_full jmeter.log console.log
+
+"$JMETER_HOME/bin/jmeter" -n \\
+  -t "$WORKSPACE/project/PerformanceEssentials.jmx" \\
+  -Japp="$APP" \\
+  -Jramp_threads="$USERS" \\
+  -Jramp_sec="$RAMP_UP_SEC" \\
+  -Jtest_hold_sec="$HOLD" \\
+  -Jshutdown_sec="$SHUTDOWN_SEC" \\
+  -Jtt_min="$TT_MIN" \\
+  -Jtt_max="$TT_MAX" \\
+  -Jthink_time_center="$TT_CENTER" \\
+  -Jthink_time_deviation="$TT_DEV" \\
+  -Jconnect_timeout="$CONNECT_TIMEOUT" \\
+  -Jresponse_timeout="$RESPONSE_TIMEOUT" \\
+  -Jstep_timeout_ms="$RESPONSE_TIMEOUT" \\
+  -Jtest_title="test-$STAMP" \\
+  -l results.jtl \\
+  -j jmeter.log \\
+  -e -o report_full 2>&1 | tee console.log
+
+RC=${PIPESTATUS[0]}
+if [ "$RC" -ne 0 ]; then echo "JMeter finished with exit code $RC. See console.log"; exit "$RC"; fi
+[ -s results.jtl ] || { echo "results.jtl is empty or missing"; exit 1; }
+'''
+            }
+        }
+    }
+
+    post {
+        always {
+            // Archive for download + the files themselves in Build Artifacts
+            sh '''#!/bin/bash
+cd "$WORKSPACE/$RUN_DIR" 2>/dev/null || exit 0
+[ -d report_full ]   && tar czf report_full.tar.gz   report_full
+exit 0
+'''
+            archiveArtifacts artifacts: 'results/build-*/**', allowEmptyArchive: true, fingerprint: true
+
+            // HTML report link in the left menu of the build page (requires the "HTML Publisher" plugin)
+            script {
+                try {
+                    publishHTML(target: [
+                        reportDir: "${env.RUN_DIR}/report_full",
+                        reportFiles: 'index.html',
+                        reportName: 'JMeter Report',
+                        keepAll: true, alwaysLinkToLastBuild: true, allowMissing: true
+                    ])
+                } catch (Throwable t) {
+                    echo "publishHTML is not available (install the HTML Publisher plugin): ${t.message}"
+                }
+            }
+        }
+        success { echo 'Test completed. Report: build menu -> JMeter Report / Build Artifacts.' }
+        failure { echo 'Failed. See Console Output and console.log / jmeter.log in results/build-N/ artifacts.' }
+    }
+}

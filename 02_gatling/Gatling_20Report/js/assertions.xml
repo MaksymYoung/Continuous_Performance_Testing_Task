@@ -1,0 +1,38 @@
+<testsuite name="simulations.PerfTestSimulation" tests="12" errors="0" failures="0" time="0">
+  <testcase name="001_HomePage: 95th percentile of response time is less than or equal to 3000.0" status="true" time="0">
+  <system-out>001_HomePage: 95th percentile of response time is less than or equal to 3000.0</system-out>
+</testcase>
+<testcase name="002_Category: 95th percentile of response time is less than or equal to 2500.0" status="true" time="0">
+  <system-out>002_Category: 95th percentile of response time is less than or equal to 2500.0</system-out>
+</testcase>
+<testcase name="003_Tables: 95th percentile of response time is less than or equal to 3000.0" status="true" time="0">
+  <system-out>003_Tables: 95th percentile of response time is less than or equal to 3000.0</system-out>
+</testcase>
+<testcase name="004_Tables_addToCart: 95th percentile of response time is less than or equal to 4000.0" status="true" time="0">
+  <system-out>004_Tables_addToCart: 95th percentile of response time is less than or equal to 4000.0</system-out>
+</testcase>
+<testcase name="005_Category: 95th percentile of response time is less than or equal to 2500.0" status="true" time="0">
+  <system-out>005_Category: 95th percentile of response time is less than or equal to 2500.0</system-out>
+</testcase>
+<testcase name="006_Chairs: 95th percentile of response time is less than or equal to 3000.0" status="true" time="0">
+  <system-out>006_Chairs: 95th percentile of response time is less than or equal to 3000.0</system-out>
+</testcase>
+<testcase name="007_Chairs_addToCart: 95th percentile of response time is less than or equal to 4000.0" status="true" time="0">
+  <system-out>007_Chairs_addToCart: 95th percentile of response time is less than or equal to 4000.0</system-out>
+</testcase>
+<testcase name="008_Cart: 95th percentile of response time is less than or equal to 3000.0" status="true" time="0">
+  <system-out>008_Cart: 95th percentile of response time is less than or equal to 3000.0</system-out>
+</testcase>
+<testcase name="009_Checkout: 95th percentile of response time is less than or equal to 4000.0" status="true" time="0">
+  <system-out>009_Checkout: 95th percentile of response time is less than or equal to 4000.0</system-out>
+</testcase>
+<testcase name="010_Choosing_Country: 95th percentile of response time is less than or equal to 2000.0" status="true" time="0">
+  <system-out>010_Choosing_Country: 95th percentile of response time is less than or equal to 2000.0</system-out>
+</testcase>
+<testcase name="011_Place_Order: 95th percentile of response time is less than or equal to 4000.0" status="true" time="0">
+  <system-out>011_Place_Order: 95th percentile of response time is less than or equal to 4000.0</system-out>
+</testcase>
+<testcase name="Global: percentage of successful events is greater than or equal to 99.0" status="true" time="0">
+  <system-out>Global: percentage of successful events is greater than or equal to 99.0</system-out>
+</testcase>
+</testsuite>

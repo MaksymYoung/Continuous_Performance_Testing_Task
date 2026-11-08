@@ -1,0 +1,40 @@
+<!--
+  Page template of the averaged Lighthouse report.
+  Placeholders ({{name}}) are filled in by aggregate-lighthouse.js:
+  css, runCount, runList, period, scoreRows, steps.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lighthouse - averaged report ({{runCount}} runs)</title>
+<style>
+{{css}}
+</style>
+</head>
+<body>
+<h1>Lighthouse UI test - averaged report</h1>
+<p class="meta">Scenario: order flow &middot; Successful runs: <b>{{runCount}}</b> ({{runList}}) &middot; Period: {{period}}</p>
+
+<section>
+  <h2>Performance score by step</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Step</th><th>Median</th><th>Mean</th><th>Min</th><th>Max</th></tr></thead>
+    <tbody>{{scoreRows}}</tbody>
+  </table></div>
+</section>
+
+{{steps}}
+
+<section>
+  <h2>Notes</h2>
+  <ul>
+    <li><b>Median</b> is the main figure (robust to outliers); mean is shown next to it. Std dev is the sample standard deviation.</li>
+    <li>Cells highlighted in the per-run tables are more than 2 std dev away from the mean of that metric.</li>
+    <li>Timespan steps have no FCP, LCP, Speed Index or TTI: Lighthouse reports those only for navigation steps. Missing metrics are simply not listed.</li>
+    <li>Links in the per-run tables open the full Lighthouse report of that run.</li>
+  </ul>
+</section>
+</body>
+</html>

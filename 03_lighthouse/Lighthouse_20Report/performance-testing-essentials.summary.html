@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lighthouse - averaged report (10 runs)</title>
+<style>
+  /* Styles of the averaged Lighthouse report.
+     Inlined into <style> by aggregate-lighthouse.js, so the generated HTML stays a single self-contained file. */
+  :root { --bg:#fff; --fg:#1f2328; --muted:#656d76; --line:#d0d7de; --head:#f6f8fa; --accent:#0b57d0; --key:#e8f0fe; --warn:#fff4d6; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0f1318; --fg:#e6edf3; --muted:#8b949e; --line:#30363d; --head:#161b22; --accent:#79b8ff; --key:#12233f; --warn:#3b2f0b; }
+  }
+  body { font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--fg); max-width: 1000px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  h2 { font-size: 18px; margin: 32px 0 8px; }
+  .meta, .unit { color: var(--muted); font-size: 13px; }
+  .tag { font-size: 12px; font-weight: 400; color: var(--muted); border: 1px solid var(--line); border-radius: 10px; padding: 1px 8px; vertical-align: middle; }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: right; }
+  thead th { background: var(--head); }
+  th[scope="row"], thead th:first-child { text-align: left; }
+  th[scope="row"] { font-weight: 500; background: var(--head); }
+  td.key { background: var(--key); font-weight: 600; }
+  td.outlier { background: var(--warn); }
+  details { margin-top: 8px; }
+  summary { cursor: pointer; color: var(--accent); }
+  a { color: var(--accent); }
+  ul { margin: 6px 0; padding-left: 20px; }
+</style>
+</head>
+<body>
+<h1>Lighthouse UI test - averaged report</h1>
+<p class="meta">Scenario: order flow &middot; Successful runs: <b>10</b> (1, 2, 3, 4, 5, 6, 7, 8, 9, 10) &middot; Period: 2026-11-07 23:55:27 - 2026-11-08 00:10:54 UTC</p>
+
+<section>
+  <h2>Performance score by step</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Step</th><th>Median</th><th>Mean</th><th>Min</th><th>Max</th></tr></thead>
+    <tbody><tr><th scope="row">Open the application</th><td class="key">91</td><td>90.3</td><td>87</td><td>92</td></tr>
+<tr><th scope="row">Navigate to the Tables tab</th><td class="key">100</td><td>99.9</td><td>99</td><td>100</td></tr>
+<tr><th scope="row">Open first table product card</th><td class="key">100</td><td>100.0</td><td>100</td><td>100</td></tr>
+<tr><th scope="row">Add the table to the cart</th><td class="key">100</td><td>100.0</td><td>100</td><td>100</td></tr>
+<tr><th scope="row">Open the cart</th><td class="key">100</td><td>99.9</td><td>99</td><td>100</td></tr>
+<tr><th scope="row">Click Place an order</th><td class="key">100</td><td>100.0</td><td>100</td><td>100</td></tr>
+<tr><th scope="row">Fill required fields and place order</th><td class="key">100</td><td>100.0</td><td>100</td><td>100</td></tr></tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>Open the application <span class="tag">navigation</span></h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Metric</th><th>Runs</th><th>Median</th><th>Mean</th><th>Min</th><th>Max</th><th>Std dev</th></tr></thead>
+    <tbody><tr><th scope="row">First Contentful Paint <span class="unit">ms</span></th><td>10</td><td class="key">887</td><td>879</td><td>785</td><td>1000</td><td>69</td></tr>
+<tr><th scope="row">Largest Contentful Paint <span class="unit">ms</span></th><td>10</td><td class="key">1790</td><td>1799</td><td>1712</td><td>1983</td><td>75</td></tr>
+<tr><th scope="row">Speed Index <span class="unit">ms</span></th><td>10</td><td class="key">1369</td><td>1389</td><td>1273</td><td>1524</td><td>83</td></tr>
+<tr><th scope="row">Total Blocking Time <span class="unit">ms</span></th><td>10</td><td class="key">0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th scope="row">Cumulative Layout Shift</th><td>10</td><td class="key">0.002</td><td>0.002</td><td>0.002</td><td>0.002</td><td>0.000</td></tr>
+<tr><th scope="row">Time to Interactive <span class="unit">ms</span></th><td>10</td><td class="key">1196</td><td>1215</td><td>1129</td><td>1405</td><td>83</td></tr>
+<tr><th scope="row">Performance score <span class="unit">0-100</span></th><td>10</td><td class="key">91</td><td>90</td><td>87</td><td>92</td><td>1</td></tr></tbody>
+  </table></div>
+  <details><summary>All 10 runs for this step</summary>
+    <div class="scroll"><table>
+      <thead><tr><th>Run</th><th>First Contentful Paint<br><span class="unit">ms</span></th><th>Largest Contentful Paint<br><span class="unit">ms</span></th><th>Speed Index<br><span class="unit">ms</span></th><th>Total Blocking Time<br><span class="unit">ms</span></th><th>Cumulative Layout Shift</th><th>Time to Interactive<br><span class="unit">ms</span></th><th>Performance score<br><span class="unit">0-100</span></th></tr></thead>
+      <tbody><tr><th scope="row"><a href="performance-testing-essentials-run1.report.html">run 1</a></th><td>1000</td><td class="outlier" title="more than 2 std dev from the mean">1983</td><td>1514</td><td>0</td><td>0.002</td><td class="outlier" title="more than 2 std dev from the mean">1405</td><td class="outlier" title="more than 2 std dev from the mean">87</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run2.report.html">run 2</a></th><td>888</td><td>1734</td><td>1524</td><td>0</td><td>0.002</td><td>1129</td><td>90</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run3.report.html">run 3</a></th><td>939</td><td>1820</td><td>1396</td><td>0</td><td>0.002</td><td>1259</td><td>90</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run4.report.html">run 4</a></th><td>813</td><td>1750</td><td>1443</td><td>0</td><td>0.002</td><td>1164</td><td>91</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run5.report.html">run 5</a></th><td>785</td><td>1712</td><td>1273</td><td>0</td><td class="outlier" title="more than 2 std dev from the mean">0.002</td><td>1148</td><td>92</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run6.report.html">run 6</a></th><td>934</td><td>1819</td><td>1369</td><td>0</td><td>0.002</td><td>1282</td><td>90</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run7.report.html">run 7</a></th><td>864</td><td>1795</td><td>1369</td><td>0</td><td>0.002</td><td>1201</td><td>91</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run8.report.html">run 8</a></th><td>893</td><td>1785</td><td>1315</td><td>0</td><td>0.002</td><td>1192</td><td>91</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run9.report.html">run 9</a></th><td>885</td><td>1829</td><td>1370</td><td>0</td><td>0.002</td><td>1219</td><td>90</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run10.report.html">run 10</a></th><td>788</td><td>1767</td><td>1321</td><td>0</td><td>0.002</td><td>1153</td><td>91</td></tr></tbody>
+    </table></div>
+  </details>
+</section>
+
+<section>
+  <h2>Navigate to the Tables tab <span class="tag">timespan</span></h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Metric</th><th>Runs</th><th>Median</th><th>Mean</th><th>Min</th><th>Max</th><th>Std dev</th></tr></thead>
+    <tbody><tr><th scope="row">Total Blocking Time <span class="unit">ms</span></th><td>10</td><td class="key">24</td><td>30</td><td>21</td><td>77</td><td>17</td></tr>
+<tr><th scope="row">Cumulative Layout Shift</th><td>10</td><td class="key">0.001</td><td>0.001</td><td>0.001</td><td>0.001</td><td>0.000</td></tr>
+<tr><th scope="row">Performance score <span class="unit">0-100</span></th><td>10</td><td class="key">100</td><td>100</td><td>99</td><td>100</td><td>0</td></tr></tbody>
+  </table></div>
+  <details><summary>All 10 runs for this step</summary>
+    <div class="scroll"><table>
+      <thead><tr><th>Run</th><th>Total Blocking Time<br><span class="unit">ms</span></th><th>Cumulative Layout Shift</th><th>Performance score<br><span class="unit">0-100</span></th></tr></thead>
+      <tbody><tr><th scope="row"><a href="performance-testing-essentials-run1.report.html">run 1</a></th><td>27</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run2.report.html">run 2</a></th><td>24</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run3.report.html">run 3</a></th><td>21</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run4.report.html">run 4</a></th><td>28</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run5.report.html">run 5</a></th><td>25</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run6.report.html">run 6</a></th><td>21</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run7.report.html">run 7</a></th><td>23</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run8.report.html">run 8</a></th><td>35</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run9.report.html">run 9</a></th><td class="outlier" title="more than 2 std dev from the mean">77</td><td>0.001</td><td class="outlier" title="more than 2 std dev from the mean">99</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run10.report.html">run 10</a></th><td>21</td><td>0.001</td><td>100</td></tr></tbody>
+    </table></div>
+  </details>
+</section>
+
+<section>
+  <h2>Open first table product card <span class="tag">timespan</span></h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Metric</th><th>Runs</th><th>Median</th><th>Mean</th><th>Min</th><th>Max</th><th>Std dev</th></tr></thead>
+    <tbody><tr><th scope="row">Total Blocking Time <span class="unit">ms</span></th><td>10</td><td class="key">36</td><td>35</td><td>26</td><td>47</td><td>6</td></tr>
+<tr><th scope="row">Cumulative Layout Shift</th><td>10</td><td class="key">0.001</td><td>0.001</td><td>0.001</td><td>0.001</td><td>0.000</td></tr>
+<tr><th scope="row">Performance score <span class="unit">0-100</span></th><td>10</td><td class="key">100</td><td>100</td><td>100</td><td>100</td><td>0</td></tr></tbody>
+  </table></div>
+  <details><summary>All 10 runs for this step</summary>
+    <div class="scroll"><table>
+      <thead><tr><th>Run</th><th>Total Blocking Time<br><span class="unit">ms</span></th><th>Cumulative Layout Shift</th><th>Performance score<br><span class="unit">0-100</span></th></tr></thead>
+      <tbody><tr><th scope="row"><a href="performance-testing-essentials-run1.report.html">run 1</a></th><td>41</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run2.report.html">run 2</a></th><td>26</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run3.report.html">run 3</a></th><td>35</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run4.report.html">run 4</a></th><td>47</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run5.report.html">run 5</a></th><td>30</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run6.report.html">run 6</a></th><td>37</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run7.report.html">run 7</a></th><td>27</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run8.report.html">run 8</a></th><td>36</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run9.report.html">run 9</a></th><td>35</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run10.report.html">run 10</a></th><td>38</td><td>0.001</td><td>100</td></tr></tbody>
+    </table></div>
+  </details>
+</section>
+
+<section>
+  <h2>Add the table to the cart <span class="tag">timespan</span></h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Metric</th><th>Runs</th><th>Median</th><th>Mean</th><th>Min</th><th>Max</th><th>Std dev</th></tr></thead>
+    <tbody><tr><th scope="row">Total Blocking Time <span class="unit">ms</span></th><td>10</td><td class="key">0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th scope="row">Cumulative Layout Shift</th><td>10</td><td class="key">0.000</td><td>0.000</td><td>0.000</td><td>0.000</td><td>0.000</td></tr>
+<tr><th scope="row">Performance score <span class="unit">0-100</span></th><td>10</td><td class="key">100</td><td>100</td><td>100</td><td>100</td><td>0</td></tr></tbody>
+  </table></div>
+  <details><summary>All 10 runs for this step</summary>
+    <div class="scroll"><table>
+      <thead><tr><th>Run</th><th>Total Blocking Time<br><span class="unit">ms</span></th><th>Cumulative Layout Shift</th><th>Performance score<br><span class="unit">0-100</span></th></tr></thead>
+      <tbody><tr><th scope="row"><a href="performance-testing-essentials-run1.report.html">run 1</a></th><td>0</td><td>0.000</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run2.report.html">run 2</a></th><td>0</td><td>0.000</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run3.report.html">run 3</a></th><td>0</td><td>0.000</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run4.report.html">run 4</a></th><td>0</td><td>0.000</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run5.report.html">run 5</a></th><td>0</td><td>0.000</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run6.report.html">run 6</a></th><td>0</td><td>0.000</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run7.report.html">run 7</a></th><td>0</td><td>0.000</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run8.report.html">run 8</a></th><td>0</td><td>0.000</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run9.report.html">run 9</a></th><td>0</td><td>0.000</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run10.report.html">run 10</a></th><td>0</td><td>0.000</td><td>100</td></tr></tbody>
+    </table></div>
+  </details>
+</section>
+
+<section>
+  <h2>Open the cart <span class="tag">timespan</span></h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Metric</th><th>Runs</th><th>Median</th><th>Mean</th><th>Min</th><th>Max</th><th>Std dev</th></tr></thead>
+    <tbody><tr><th scope="row">Total Blocking Time <span class="unit">ms</span></th><td>10</td><td class="key">21</td><td>25</td><td>9</td><td>67</td><td>17</td></tr>
+<tr><th scope="row">Cumulative Layout Shift</th><td>10</td><td class="key">0.001</td><td>0.001</td><td>0.001</td><td>0.002</td><td>0.000</td></tr>
+<tr><th scope="row">Performance score <span class="unit">0-100</span></th><td>10</td><td class="key">100</td><td>100</td><td>99</td><td>100</td><td>0</td></tr></tbody>
+  </table></div>
+  <details><summary>All 10 runs for this step</summary>
+    <div class="scroll"><table>
+      <thead><tr><th>Run</th><th>Total Blocking Time<br><span class="unit">ms</span></th><th>Cumulative Layout Shift</th><th>Performance score<br><span class="unit">0-100</span></th></tr></thead>
+      <tbody><tr><th scope="row"><a href="performance-testing-essentials-run1.report.html">run 1</a></th><td>26</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run2.report.html">run 2</a></th><td>9</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run3.report.html">run 3</a></th><td>13</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run4.report.html">run 4</a></th><td>15</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run5.report.html">run 5</a></th><td class="outlier" title="more than 2 std dev from the mean">67</td><td>0.001</td><td class="outlier" title="more than 2 std dev from the mean">99</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run6.report.html">run 6</a></th><td>29</td><td class="outlier" title="more than 2 std dev from the mean">0.002</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run7.report.html">run 7</a></th><td>15</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run8.report.html">run 8</a></th><td>20</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run9.report.html">run 9</a></th><td>23</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run10.report.html">run 10</a></th><td>34</td><td>0.001</td><td>100</td></tr></tbody>
+    </table></div>
+  </details>
+</section>
+
+<section>
+  <h2>Click Place an order <span class="tag">timespan</span></h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Metric</th><th>Runs</th><th>Median</th><th>Mean</th><th>Min</th><th>Max</th><th>Std dev</th></tr></thead>
+    <tbody><tr><th scope="row">Total Blocking Time <span class="unit">ms</span></th><td>10</td><td class="key">28</td><td>27</td><td>12</td><td>43</td><td>11</td></tr>
+<tr><th scope="row">Cumulative Layout Shift</th><td>10</td><td class="key">0.030</td><td>0.027</td><td>0.003</td><td>0.031</td><td>0.009</td></tr>
+<tr><th scope="row">Performance score <span class="unit">0-100</span></th><td>10</td><td class="key">100</td><td>100</td><td>100</td><td>100</td><td>0</td></tr></tbody>
+  </table></div>
+  <details><summary>All 10 runs for this step</summary>
+    <div class="scroll"><table>
+      <thead><tr><th>Run</th><th>Total Blocking Time<br><span class="unit">ms</span></th><th>Cumulative Layout Shift</th><th>Performance score<br><span class="unit">0-100</span></th></tr></thead>
+      <tbody><tr><th scope="row"><a href="performance-testing-essentials-run1.report.html">run 1</a></th><td>14</td><td class="outlier" title="more than 2 std dev from the mean">0.003</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run2.report.html">run 2</a></th><td>12</td><td>0.031</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run3.report.html">run 3</a></th><td>35</td><td>0.031</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run4.report.html">run 4</a></th><td>22</td><td>0.031</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run5.report.html">run 5</a></th><td>24</td><td>0.029</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run6.report.html">run 6</a></th><td>18</td><td>0.031</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run7.report.html">run 7</a></th><td>36</td><td>0.029</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run8.report.html">run 8</a></th><td>33</td><td>0.031</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run9.report.html">run 9</a></th><td>43</td><td>0.029</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run10.report.html">run 10</a></th><td>39</td><td>0.029</td><td>100</td></tr></tbody>
+    </table></div>
+  </details>
+</section>
+
+<section>
+  <h2>Fill required fields and place order <span class="tag">timespan</span></h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Metric</th><th>Runs</th><th>Median</th><th>Mean</th><th>Min</th><th>Max</th><th>Std dev</th></tr></thead>
+    <tbody><tr><th scope="row">Total Blocking Time <span class="unit">ms</span></th><td>10</td><td class="key">18</td><td>16</td><td>3</td><td>26</td><td>9</td></tr>
+<tr><th scope="row">Cumulative Layout Shift</th><td>10</td><td class="key">0.001</td><td>0.001</td><td>0.001</td><td>0.001</td><td>0.000</td></tr>
+<tr><th scope="row">Performance score <span class="unit">0-100</span></th><td>10</td><td class="key">100</td><td>100</td><td>100</td><td>100</td><td>0</td></tr></tbody>
+  </table></div>
+  <details><summary>All 10 runs for this step</summary>
+    <div class="scroll"><table>
+      <thead><tr><th>Run</th><th>Total Blocking Time<br><span class="unit">ms</span></th><th>Cumulative Layout Shift</th><th>Performance score<br><span class="unit">0-100</span></th></tr></thead>
+      <tbody><tr><th scope="row"><a href="performance-testing-essentials-run1.report.html">run 1</a></th><td>22</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run2.report.html">run 2</a></th><td>21</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run3.report.html">run 3</a></th><td>17</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run4.report.html">run 4</a></th><td>14</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run5.report.html">run 5</a></th><td>26</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run6.report.html">run 6</a></th><td>3</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run7.report.html">run 7</a></th><td>4</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run8.report.html">run 8</a></th><td>19</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run9.report.html">run 9</a></th><td>7</td><td>0.001</td><td>100</td></tr>
+<tr><th scope="row"><a href="performance-testing-essentials-run10.report.html">run 10</a></th><td>26</td><td>0.001</td><td>100</td></tr></tbody>
+    </table></div>
+  </details>
+</section>
+
+
+<section>
+  <h2>Notes</h2>
+  <ul>
+    <li><b>Median</b> is the main figure (robust to outliers); mean is shown next to it. Std dev is the sample standard deviation.</li>
+    <li>Cells highlighted in the per-run tables are more than 2 std dev away from the mean of that metric.</li>
+    <li>Timespan steps have no FCP, LCP, Speed Index or TTI: Lighthouse reports those only for navigation steps. Missing metrics are simply not listed.</li>
+    <li>Links in the per-run tables open the full Lighthouse report of that run.</li>
+  </ul>
+</section>
+</body>
+</html>

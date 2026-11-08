@@ -1,0 +1,251 @@
+﻿run,step,metric,unit,value
+1,Open the application,First Contentful Paint,ms,999.65
+2,Open the application,First Contentful Paint,ms,888.37
+3,Open the application,First Contentful Paint,ms,938.55
+4,Open the application,First Contentful Paint,ms,812.85
+5,Open the application,First Contentful Paint,ms,784.74
+6,Open the application,First Contentful Paint,ms,933.92
+7,Open the application,First Contentful Paint,ms,864.48
+8,Open the application,First Contentful Paint,ms,893.02
+9,Open the application,First Contentful Paint,ms,885.05
+10,Open the application,First Contentful Paint,ms,788.41
+1,Open the application,Largest Contentful Paint,ms,1982.85
+2,Open the application,Largest Contentful Paint,ms,1734.35
+3,Open the application,Largest Contentful Paint,ms,1820.41
+4,Open the application,Largest Contentful Paint,ms,1750.45
+5,Open the application,Largest Contentful Paint,ms,1711.63
+6,Open the application,Largest Contentful Paint,ms,1818.92
+7,Open the application,Largest Contentful Paint,ms,1795.23
+8,Open the application,Largest Contentful Paint,ms,1784.50
+9,Open the application,Largest Contentful Paint,ms,1828.66
+10,Open the application,Largest Contentful Paint,ms,1767.43
+1,Open the application,Speed Index,ms,1514.41
+2,Open the application,Speed Index,ms,1524.47
+3,Open the application,Speed Index,ms,1395.89
+4,Open the application,Speed Index,ms,1443.25
+5,Open the application,Speed Index,ms,1273.13
+6,Open the application,Speed Index,ms,1368.84
+7,Open the application,Speed Index,ms,1369.34
+8,Open the application,Speed Index,ms,1314.59
+9,Open the application,Speed Index,ms,1369.57
+10,Open the application,Speed Index,ms,1321.15
+1,Open the application,Total Blocking Time,ms,0.00
+2,Open the application,Total Blocking Time,ms,0.00
+3,Open the application,Total Blocking Time,ms,0.00
+4,Open the application,Total Blocking Time,ms,0.00
+5,Open the application,Total Blocking Time,ms,0.00
+6,Open the application,Total Blocking Time,ms,0.00
+7,Open the application,Total Blocking Time,ms,0.00
+8,Open the application,Total Blocking Time,ms,0.00
+9,Open the application,Total Blocking Time,ms,0.00
+10,Open the application,Total Blocking Time,ms,0.00
+1,Open the application,Cumulative Layout Shift,,0.00222
+2,Open the application,Cumulative Layout Shift,,0.00222
+3,Open the application,Cumulative Layout Shift,,0.00215
+4,Open the application,Cumulative Layout Shift,,0.00222
+5,Open the application,Cumulative Layout Shift,,0.00158
+6,Open the application,Cumulative Layout Shift,,0.00222
+7,Open the application,Cumulative Layout Shift,,0.00222
+8,Open the application,Cumulative Layout Shift,,0.00222
+9,Open the application,Cumulative Layout Shift,,0.00222
+10,Open the application,Cumulative Layout Shift,,0.00222
+1,Open the application,Time to Interactive,ms,1404.81
+2,Open the application,Time to Interactive,ms,1129.47
+3,Open the application,Time to Interactive,ms,1259.49
+4,Open the application,Time to Interactive,ms,1164.34
+5,Open the application,Time to Interactive,ms,1148.08
+6,Open the application,Time to Interactive,ms,1282.49
+7,Open the application,Time to Interactive,ms,1200.50
+8,Open the application,Time to Interactive,ms,1192.31
+9,Open the application,Time to Interactive,ms,1218.85
+10,Open the application,Time to Interactive,ms,1153.31
+1,Open the application,Performance score,0-100,87.00
+2,Open the application,Performance score,0-100,90.00
+3,Open the application,Performance score,0-100,90.00
+4,Open the application,Performance score,0-100,91.00
+5,Open the application,Performance score,0-100,92.00
+6,Open the application,Performance score,0-100,90.00
+7,Open the application,Performance score,0-100,91.00
+8,Open the application,Performance score,0-100,91.00
+9,Open the application,Performance score,0-100,90.00
+10,Open the application,Performance score,0-100,91.00
+1,Navigate to the Tables tab,Total Blocking Time,ms,26.87
+2,Navigate to the Tables tab,Total Blocking Time,ms,23.78
+3,Navigate to the Tables tab,Total Blocking Time,ms,20.69
+4,Navigate to the Tables tab,Total Blocking Time,ms,27.52
+5,Navigate to the Tables tab,Total Blocking Time,ms,25.11
+6,Navigate to the Tables tab,Total Blocking Time,ms,21.36
+7,Navigate to the Tables tab,Total Blocking Time,ms,22.58
+8,Navigate to the Tables tab,Total Blocking Time,ms,34.71
+9,Navigate to the Tables tab,Total Blocking Time,ms,77.05
+10,Navigate to the Tables tab,Total Blocking Time,ms,20.66
+1,Navigate to the Tables tab,Cumulative Layout Shift,,0.00109
+2,Navigate to the Tables tab,Cumulative Layout Shift,,0.00109
+3,Navigate to the Tables tab,Cumulative Layout Shift,,0.00109
+4,Navigate to the Tables tab,Cumulative Layout Shift,,0.00109
+5,Navigate to the Tables tab,Cumulative Layout Shift,,0.00109
+6,Navigate to the Tables tab,Cumulative Layout Shift,,0.00109
+7,Navigate to the Tables tab,Cumulative Layout Shift,,0.00109
+8,Navigate to the Tables tab,Cumulative Layout Shift,,0.00109
+9,Navigate to the Tables tab,Cumulative Layout Shift,,0.00109
+10,Navigate to the Tables tab,Cumulative Layout Shift,,0.00109
+1,Navigate to the Tables tab,Performance score,0-100,100.00
+2,Navigate to the Tables tab,Performance score,0-100,100.00
+3,Navigate to the Tables tab,Performance score,0-100,100.00
+4,Navigate to the Tables tab,Performance score,0-100,100.00
+5,Navigate to the Tables tab,Performance score,0-100,100.00
+6,Navigate to the Tables tab,Performance score,0-100,100.00
+7,Navigate to the Tables tab,Performance score,0-100,100.00
+8,Navigate to the Tables tab,Performance score,0-100,100.00
+9,Navigate to the Tables tab,Performance score,0-100,99.00
+10,Navigate to the Tables tab,Performance score,0-100,100.00
+1,Open first table product card,Total Blocking Time,ms,40.53
+2,Open first table product card,Total Blocking Time,ms,25.94
+3,Open first table product card,Total Blocking Time,ms,35.48
+4,Open first table product card,Total Blocking Time,ms,47.07
+5,Open first table product card,Total Blocking Time,ms,29.86
+6,Open first table product card,Total Blocking Time,ms,37.07
+7,Open first table product card,Total Blocking Time,ms,27.47
+8,Open first table product card,Total Blocking Time,ms,35.92
+9,Open first table product card,Total Blocking Time,ms,34.55
+10,Open first table product card,Total Blocking Time,ms,38.45
+1,Open first table product card,Cumulative Layout Shift,,0.00098
+2,Open first table product card,Cumulative Layout Shift,,0.00098
+3,Open first table product card,Cumulative Layout Shift,,0.00098
+4,Open first table product card,Cumulative Layout Shift,,0.00098
+5,Open first table product card,Cumulative Layout Shift,,0.00098
+6,Open first table product card,Cumulative Layout Shift,,0.00098
+7,Open first table product card,Cumulative Layout Shift,,0.00098
+8,Open first table product card,Cumulative Layout Shift,,0.00098
+9,Open first table product card,Cumulative Layout Shift,,0.00098
+10,Open first table product card,Cumulative Layout Shift,,0.00098
+1,Open first table product card,Performance score,0-100,100.00
+2,Open first table product card,Performance score,0-100,100.00
+3,Open first table product card,Performance score,0-100,100.00
+4,Open first table product card,Performance score,0-100,100.00
+5,Open first table product card,Performance score,0-100,100.00
+6,Open first table product card,Performance score,0-100,100.00
+7,Open first table product card,Performance score,0-100,100.00
+8,Open first table product card,Performance score,0-100,100.00
+9,Open first table product card,Performance score,0-100,100.00
+10,Open first table product card,Performance score,0-100,100.00
+1,Add the table to the cart,Total Blocking Time,ms,0.00
+2,Add the table to the cart,Total Blocking Time,ms,0.00
+3,Add the table to the cart,Total Blocking Time,ms,0.00
+4,Add the table to the cart,Total Blocking Time,ms,0.00
+5,Add the table to the cart,Total Blocking Time,ms,0.00
+6,Add the table to the cart,Total Blocking Time,ms,0.00
+7,Add the table to the cart,Total Blocking Time,ms,0.00
+8,Add the table to the cart,Total Blocking Time,ms,0.00
+9,Add the table to the cart,Total Blocking Time,ms,0.00
+10,Add the table to the cart,Total Blocking Time,ms,0.00
+1,Add the table to the cart,Cumulative Layout Shift,,0.00016
+2,Add the table to the cart,Cumulative Layout Shift,,0.00016
+3,Add the table to the cart,Cumulative Layout Shift,,0.00016
+4,Add the table to the cart,Cumulative Layout Shift,,0.00016
+5,Add the table to the cart,Cumulative Layout Shift,,0.00016
+6,Add the table to the cart,Cumulative Layout Shift,,0.00016
+7,Add the table to the cart,Cumulative Layout Shift,,0.00016
+8,Add the table to the cart,Cumulative Layout Shift,,0.00016
+9,Add the table to the cart,Cumulative Layout Shift,,0.00016
+10,Add the table to the cart,Cumulative Layout Shift,,0.00016
+1,Add the table to the cart,Performance score,0-100,100.00
+2,Add the table to the cart,Performance score,0-100,100.00
+3,Add the table to the cart,Performance score,0-100,100.00
+4,Add the table to the cart,Performance score,0-100,100.00
+5,Add the table to the cart,Performance score,0-100,100.00
+6,Add the table to the cart,Performance score,0-100,100.00
+7,Add the table to the cart,Performance score,0-100,100.00
+8,Add the table to the cart,Performance score,0-100,100.00
+9,Add the table to the cart,Performance score,0-100,100.00
+10,Add the table to the cart,Performance score,0-100,100.00
+1,Open the cart,Total Blocking Time,ms,26.12
+2,Open the cart,Total Blocking Time,ms,9.18
+3,Open the cart,Total Blocking Time,ms,13.47
+4,Open the cart,Total Blocking Time,ms,14.99
+5,Open the cart,Total Blocking Time,ms,66.99
+6,Open the cart,Total Blocking Time,ms,28.89
+7,Open the cart,Total Blocking Time,ms,14.75
+8,Open the cart,Total Blocking Time,ms,19.86
+9,Open the cart,Total Blocking Time,ms,23.13
+10,Open the cart,Total Blocking Time,ms,33.66
+1,Open the cart,Cumulative Layout Shift,,0.00119
+2,Open the cart,Cumulative Layout Shift,,0.00119
+3,Open the cart,Cumulative Layout Shift,,0.00119
+4,Open the cart,Cumulative Layout Shift,,0.00119
+5,Open the cart,Cumulative Layout Shift,,0.00119
+6,Open the cart,Cumulative Layout Shift,,0.00187
+7,Open the cart,Cumulative Layout Shift,,0.00119
+8,Open the cart,Cumulative Layout Shift,,0.00119
+9,Open the cart,Cumulative Layout Shift,,0.00119
+10,Open the cart,Cumulative Layout Shift,,0.00119
+1,Open the cart,Performance score,0-100,100.00
+2,Open the cart,Performance score,0-100,100.00
+3,Open the cart,Performance score,0-100,100.00
+4,Open the cart,Performance score,0-100,100.00
+5,Open the cart,Performance score,0-100,99.00
+6,Open the cart,Performance score,0-100,100.00
+7,Open the cart,Performance score,0-100,100.00
+8,Open the cart,Performance score,0-100,100.00
+9,Open the cart,Performance score,0-100,100.00
+10,Open the cart,Performance score,0-100,100.00
+1,Click Place an order,Total Blocking Time,ms,13.61
+2,Click Place an order,Total Blocking Time,ms,11.80
+3,Click Place an order,Total Blocking Time,ms,34.96
+4,Click Place an order,Total Blocking Time,ms,21.77
+5,Click Place an order,Total Blocking Time,ms,23.58
+6,Click Place an order,Total Blocking Time,ms,17.71
+7,Click Place an order,Total Blocking Time,ms,36.34
+8,Click Place an order,Total Blocking Time,ms,33.26
+9,Click Place an order,Total Blocking Time,ms,43.20
+10,Click Place an order,Total Blocking Time,ms,38.72
+1,Click Place an order,Cumulative Layout Shift,,0.00308
+2,Click Place an order,Cumulative Layout Shift,,0.03080
+3,Click Place an order,Cumulative Layout Shift,,0.03080
+4,Click Place an order,Cumulative Layout Shift,,0.03080
+5,Click Place an order,Cumulative Layout Shift,,0.02947
+6,Click Place an order,Cumulative Layout Shift,,0.03080
+7,Click Place an order,Cumulative Layout Shift,,0.02947
+8,Click Place an order,Cumulative Layout Shift,,0.03080
+9,Click Place an order,Cumulative Layout Shift,,0.02947
+10,Click Place an order,Cumulative Layout Shift,,0.02947
+1,Click Place an order,Performance score,0-100,100.00
+2,Click Place an order,Performance score,0-100,100.00
+3,Click Place an order,Performance score,0-100,100.00
+4,Click Place an order,Performance score,0-100,100.00
+5,Click Place an order,Performance score,0-100,100.00
+6,Click Place an order,Performance score,0-100,100.00
+7,Click Place an order,Performance score,0-100,100.00
+8,Click Place an order,Performance score,0-100,100.00
+9,Click Place an order,Performance score,0-100,100.00
+10,Click Place an order,Performance score,0-100,100.00
+1,Fill required fields and place order,Total Blocking Time,ms,21.82
+2,Fill required fields and place order,Total Blocking Time,ms,20.78
+3,Fill required fields and place order,Total Blocking Time,ms,16.66
+4,Fill required fields and place order,Total Blocking Time,ms,14.12
+5,Fill required fields and place order,Total Blocking Time,ms,26.11
+6,Fill required fields and place order,Total Blocking Time,ms,3.26
+7,Fill required fields and place order,Total Blocking Time,ms,3.52
+8,Fill required fields and place order,Total Blocking Time,ms,19.30
+9,Fill required fields and place order,Total Blocking Time,ms,7.24
+10,Fill required fields and place order,Total Blocking Time,ms,25.89
+1,Fill required fields and place order,Cumulative Layout Shift,,0.00109
+2,Fill required fields and place order,Cumulative Layout Shift,,0.00109
+3,Fill required fields and place order,Cumulative Layout Shift,,0.00109
+4,Fill required fields and place order,Cumulative Layout Shift,,0.00109
+5,Fill required fields and place order,Cumulative Layout Shift,,0.00109
+6,Fill required fields and place order,Cumulative Layout Shift,,0.00109
+7,Fill required fields and place order,Cumulative Layout Shift,,0.00109
+8,Fill required fields and place order,Cumulative Layout Shift,,0.00109
+9,Fill required fields and place order,Cumulative Layout Shift,,0.00109
+10,Fill required fields and place order,Cumulative Layout Shift,,0.00109
+1,Fill required fields and place order,Performance score,0-100,100.00
+2,Fill required fields and place order,Performance score,0-100,100.00
+3,Fill required fields and place order,Performance score,0-100,100.00
+4,Fill required fields and place order,Performance score,0-100,100.00
+5,Fill required fields and place order,Performance score,0-100,100.00
+6,Fill required fields and place order,Performance score,0-100,100.00
+7,Fill required fields and place order,Performance score,0-100,100.00
+8,Fill required fields and place order,Performance score,0-100,100.00
+9,Fill required fields and place order,Performance score,0-100,100.00
+10,Fill required fields and place order,Performance score,0-100,100.00
