@@ -2,6 +2,8 @@
 // sh/bash only, no PowerShell. Same idea as the JMeter Jenkinsfile:
 //   ramp-up -> steady state, one overall HTML report (no separate steady-state report).
 // The project is copied into the Jenkins container by deploy_gatling_ubuntu.sh.
+// All load parameters are build parameters ("Build with Parameters"),
+// so the number of users etc. can be changed without editing this file.
 
 pipeline {
     agent any
@@ -10,6 +12,18 @@ pipeline {
         timeout(time: 60, unit: 'MINUTES')
         buildDiscarder(logRotator(numToKeepStr: '10'))
         disableConcurrentBuilds()
+    }
+
+    parameters {
+        string(name: 'START_USERS',        defaultValue: '3',     description: 'Number of virtual users at the start of the ramp-up')
+        string(name: 'USERS',              defaultValue: '5',     description: 'Number of virtual users at the end of the ramp-up (steady state)')
+        string(name: 'TOTAL_DURATION_SEC', defaultValue: '600',   description: 'Total test duration, seconds (ramp-up + steady state)')
+        string(name: 'RAMP_UP_SEC',        defaultValue: '120',   description: 'Ramp-up time, seconds')
+        string(name: 'TT_MIN',             defaultValue: '2000',  description: 'Think time min, ms')
+        string(name: 'TT_MAX',             defaultValue: '5000',  description: 'Think time max, ms')
+        string(name: 'CONNECT_TIMEOUT',    defaultValue: '5000',  description: 'HTTP connect timeout, ms')
+        string(name: 'RESPONSE_TIMEOUT',   defaultValue: '10000', description: 'HTTP response timeout, ms')
+        string(name: 'MIN_SUCCESS_PCT',    defaultValue: '99',    description: 'Assertion: minimum percentage of successful requests (0-100)')
     }
 
     environment {
@@ -28,17 +42,6 @@ pipeline {
         SITE_URL     = 'http://localhost'
         HOST_HEADER  = 'localhost'
 
-        // ---- Load model ----
-        USERS_MIN          = '3'
-        USERS_MAX          = '5'
-        TOTAL_DURATION_SEC = '600'
-        RAMP_UP_SEC        = '120'
-        TT_MIN             = '2000'
-        TT_MAX             = '5000'
-        CONNECT_TIMEOUT    = '5000'
-        RESPONSE_TIMEOUT   = '10000'
-        MIN_SUCCESS_PCT    = '99'
-
         // ---- Results directory of the current build (relative to workspace) ----
         RUN_DIR      = "results/build-${BUILD_NUMBER}"
 
@@ -55,6 +58,19 @@ set -euo pipefail
 
 echo "== Environment check =="
 whoami; uname -a
+
+# Parameters must be non-negative integers; no upper/lower limit on users - that is the caller's choice
+for P in START_USERS USERS TOTAL_DURATION_SEC RAMP_UP_SEC TT_MIN TT_MAX CONNECT_TIMEOUT RESPONSE_TIMEOUT MIN_SUCCESS_PCT; do
+  V="${!P}"
+  case "$V" in
+    ''|*[!0-9]*) echo "Parameter $P must be a non-negative integer, got '$V'"; exit 1;;
+  esac
+done
+[ "$START_USERS" -ge 1 ] || { echo "START_USERS must be >= 1"; exit 1; }
+[ "$USERS" -ge 1 ]       || { echo "USERS must be >= 1"; exit 1; }
+[ "$TT_MAX" -ge "$TT_MIN" ] || { echo "TT_MAX must be >= TT_MIN"; exit 1; }
+[ "$MIN_SUCCESS_PCT" -le 100 ] || { echo "MIN_SUCCESS_PCT must be 0..100"; exit 1; }
+[ "$TOTAL_DURATION_SEC" -gt "$RAMP_UP_SEC" ] || { echo "TOTAL_DURATION_SEC must be greater than RAMP_UP_SEC"; exit 1; }
 
 [ -f "$PROJECT_DIR/pom.xml" ] || { echo "Missing $PROJECT_DIR/pom.xml - run deploy_gatling_ubuntu.sh first"; exit 1; }
 
@@ -116,8 +132,6 @@ echo "Home page content is OK"
 set -uo pipefail
 export PATH="$JAVA_HOME/bin:$MAVEN_HOME/bin:$PATH"
 
-USERS=$USERS_MAX
-START_USERS=$USERS_MIN
 HOLD=$(( TOTAL_DURATION_SEC - RAMP_UP_SEC ))
 TT_CENTER=$(( (TT_MIN + TT_MAX) / 2 ))
 TT_DEV=$(( (TT_MAX - TT_MIN) / 2 ))

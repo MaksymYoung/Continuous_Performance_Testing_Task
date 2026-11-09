@@ -1,6 +1,8 @@
 // Jenkinsfile - Lighthouse user flow (performance-testing-essentials.js) on Linux/Ubuntu
 // sh/bash only, no PowerShell. Same logic as the former run_lighthouse.ps1:
 //   N loops of the user flow -> one averaged HTML report (summary) + per-run reports. No InfluxDB.
+// The load model (number of loops, pause) is a build parameter ("Build with Parameters"),
+// so it can be changed without editing this file.
 
 pipeline {
     agent any
@@ -8,6 +10,11 @@ pipeline {
     options {
         timeout(time: 60, unit: 'MINUTES')
         buildDiscarder(logRotator(numToKeepStr: '10'))
+    }
+
+    parameters {
+        string(name: 'LOOPS',         defaultValue: '10', description: 'Number of flow runs (loops)')
+        string(name: 'PAUSE_SECONDS', defaultValue: '5',  description: 'Pause between runs, seconds')
     }
 
     environment {
@@ -21,10 +28,6 @@ pipeline {
         HOST_RESOLVER_RULES = 'MAP localhost 172.17.0.1'   // 172.17.0.1 = Docker host gateway, reachable from the container
         APP_CHECK_URL       = 'http://172.17.0.1:80/'      // pre-flight check, sent with "Host: localhost"
         SCENARIO            = 'order-flow'
-
-        // ---- Load model (same as in run_lighthouse.ps1) ----
-        LOOPS         = '10'      // number of flow runs
-        PAUSE_SECONDS = '5'       // pause between runs
 
         // ---- Results directory of the current build (relative to workspace) ----
         RUN_DIR       = "results/build-${BUILD_NUMBER}"
@@ -44,6 +47,13 @@ NODE_MAJOR=$(node --version | sed 's/^v//; s/\\..*//')
 echo "node $(node --version), npm $(npm --version)"
 [ "$NODE_MAJOR" -ge 18 ] || { echo "Node 18+ is required (found $NODE_MAJOR)"; exit 1; }
 
+# Parameters must be non-negative integers; no upper limit on loops - that is the caller's choice
+for P in LOOPS PAUSE_SECONDS; do
+  V="${!P}"
+  case "$V" in
+    ''|*[!0-9]*) echo "Parameter $P must be a non-negative integer, got '$V'"; exit 1;;
+  esac
+done
 [ "$LOOPS" -ge 1 ] || { echo "LOOPS must be 1 or greater"; exit 1; }
 [ -f "$PROJECT_DIR/performance-testing-essentials.js" ] || { echo "Missing $PROJECT_DIR/performance-testing-essentials.js - run deploy_lighthouse_ubuntu.sh"; exit 1; }
 [ -d "$PROJECT_DIR/node_modules/lighthouse" ] && [ -d "$PROJECT_DIR/node_modules/puppeteer" ] \\
