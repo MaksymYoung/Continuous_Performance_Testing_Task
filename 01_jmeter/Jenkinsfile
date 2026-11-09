@@ -26,6 +26,18 @@ pipeline {
     }
 
     environment {
+        // Defaults also apply when the first build has no parameter values.
+        USERS = "${params.USERS ?: '4'}"
+        TOTAL_DURATION_SEC = "${params.TOTAL_DURATION_SEC ?: '600'}"
+        RAMP_UP_SEC = "${params.RAMP_UP_SEC ?: '30'}"
+        SHUTDOWN_SEC = "${params.SHUTDOWN_SEC ?: '10'}"
+        TT_MIN = "${params.TT_MIN ?: '2000'}"
+        TT_MAX = "${params.TT_MAX ?: '5000'}"
+        CONNECT_TIMEOUT = "${params.CONNECT_TIMEOUT ?: '5000'}"
+        RESPONSE_TIMEOUT = "${params.RESPONSE_TIMEOUT ?: '10000'}"
+        APP = "${params.APP ?: '172.17.0.1'}"
+        APP_PORT = "${params.APP_PORT ?: '80'}"
+
         // ---- Paths inside the Jenkins container (Linux) ----
         PROJECT_DIR  = '/var/jenkins_home/perf_project'      // jmx and csv/ are copied here
         JMETER_HOME  = '/opt/apache-jmeter'                  // JMeter 5.6.3 + jpgc-casutg plugin
@@ -45,9 +57,21 @@ set -euo pipefail
 echo "== Environment check =="
 whoami; uname -a; java -version 2>&1 | head -1
 
-# Parameters must be positive integers (no upper/lower limit on users - that is the caller's choice)
+# On the first build Jenkins may not have populated parameter environment variables yet.
+# Supply defaults before enabling strict validation; avoid indirect expansion with unset values.
+export USERS="${USERS:-4}"
+export TOTAL_DURATION_SEC="${TOTAL_DURATION_SEC:-600}"
+export RAMP_UP_SEC="${RAMP_UP_SEC:-30}"
+export SHUTDOWN_SEC="${SHUTDOWN_SEC:-10}"
+export TT_MIN="${TT_MIN:-2000}"
+export TT_MAX="${TT_MAX:-5000}"
+export CONNECT_TIMEOUT="${CONNECT_TIMEOUT:-5000}"
+export RESPONSE_TIMEOUT="${RESPONSE_TIMEOUT:-10000}"
+export APP="${APP:-172.17.0.1}"
+export APP_PORT="${APP_PORT:-80}"
+
 for P in USERS TOTAL_DURATION_SEC RAMP_UP_SEC SHUTDOWN_SEC TT_MIN TT_MAX CONNECT_TIMEOUT RESPONSE_TIMEOUT APP_PORT; do
-  V="${!P}"
+  V="$(printenv "$P" || true)"
   case "$V" in
     ''|*[!0-9]*) echo "Parameter $P must be a non-negative integer, got '$V'"; exit 1;;
   esac
@@ -86,7 +110,7 @@ if [ -z "$CODE" ] || [ "$CODE" = "000" ]; then
   exit 1
 fi
 echo "Target responded with HTTP $CODE"
-[ "$CODE" = "200" ] || echo "WARNING: expected HTTP 200, got $CODE"
+[ "$CODE" = "200" ] || { echo "ERROR: expected HTTP 200, got $CODE"; exit 1; }
 '''
             }
         }
@@ -149,7 +173,7 @@ cd "$WORKSPACE/$RUN_DIR" 2>/dev/null || exit 0
 [ -d report_full ]   && tar czf report_full.tar.gz   report_full
 exit 0
 '''
-            archiveArtifacts artifacts: 'results/build-*/**', allowEmptyArchive: true, fingerprint: true
+            archiveArtifacts artifacts: "${env.RUN_DIR}/**", allowEmptyArchive: true, fingerprint: true
 
             // HTML report link in the left menu of the build page (requires the "HTML Publisher" plugin)
             script {

@@ -59,9 +59,21 @@ set -euo pipefail
 echo "== Environment check =="
 whoami; uname -a
 
+# Jenkins may not export newly added build parameters on the first run.
+# Supply defaults before validating, so `set -u` cannot abort the build.
+export START_USERS="${START_USERS:-3}"
+export USERS="${USERS:-5}"
+export TOTAL_DURATION_SEC="${TOTAL_DURATION_SEC:-600}"
+export RAMP_UP_SEC="${RAMP_UP_SEC:-120}"
+export TT_MIN="${TT_MIN:-2000}"
+export TT_MAX="${TT_MAX:-5000}"
+export CONNECT_TIMEOUT="${CONNECT_TIMEOUT:-5000}"
+export RESPONSE_TIMEOUT="${RESPONSE_TIMEOUT:-10000}"
+export MIN_SUCCESS_PCT="${MIN_SUCCESS_PCT:-99}"
+
 # Parameters must be non-negative integers; no upper/lower limit on users - that is the caller's choice
 for P in START_USERS USERS TOTAL_DURATION_SEC RAMP_UP_SEC TT_MIN TT_MAX CONNECT_TIMEOUT RESPONSE_TIMEOUT MIN_SUCCESS_PCT; do
-  V="${!P}"
+  V="${!P:-}"
   case "$V" in
     ''|*[!0-9]*) echo "Parameter $P must be a non-negative integer, got '$V'"; exit 1;;
   esac
@@ -131,6 +143,15 @@ echo "Home page content is OK"
                 sh '''#!/bin/bash
 set -uo pipefail
 export PATH="$JAVA_HOME/bin:$MAVEN_HOME/bin:$PATH"
+export START_USERS="${START_USERS:-3}"
+export USERS="${USERS:-5}"
+export TOTAL_DURATION_SEC="${TOTAL_DURATION_SEC:-600}"
+export RAMP_UP_SEC="${RAMP_UP_SEC:-120}"
+export TT_MIN="${TT_MIN:-2000}"
+export TT_MAX="${TT_MAX:-5000}"
+export CONNECT_TIMEOUT="${CONNECT_TIMEOUT:-5000}"
+export RESPONSE_TIMEOUT="${RESPONSE_TIMEOUT:-10000}"
+export MIN_SUCCESS_PCT="${MIN_SUCCESS_PCT:-99}"
 
 HOLD=$(( TOTAL_DURATION_SEC - RAMP_UP_SEC ))
 TT_CENTER=$(( (TT_MIN + TT_MAX) / 2 ))
@@ -193,12 +214,16 @@ exit 0
             // HTML report link in the left menu of the build page (requires the "HTML Publisher" plugin)
             script {
                 try {
+                    if (!fileExists("${env.RUN_DIR}/report_full/index.html")) {
+                        echo 'Gatling HTML report is absent; skipping HTML publication.'
+                    } else {
                     publishHTML(target: [
                         reportDir: "${env.RUN_DIR}/report_full",
                         reportFiles: 'index.html',
                         reportName: 'Gatling Report',
-                        keepAll: true, alwaysLinkToLastBuild: true, allowMissing: true
+                        keepAll: true, alwaysLinkToLastBuild: true, allowMissing: false
                     ])
+                    }
                 } catch (Throwable t) {
                     echo "publishHTML is not available (install the HTML Publisher plugin): ${t.message}"
                 }

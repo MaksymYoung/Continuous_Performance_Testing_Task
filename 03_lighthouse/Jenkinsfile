@@ -48,8 +48,11 @@ echo "node $(node --version), npm $(npm --version)"
 [ "$NODE_MAJOR" -ge 18 ] || { echo "Node 18+ is required (found $NODE_MAJOR)"; exit 1; }
 
 # Parameters must be non-negative integers; no upper limit on loops - that is the caller's choice
+LOOPS="${LOOPS:-10}"
+PAUSE_SECONDS="${PAUSE_SECONDS:-5}"
+export LOOPS PAUSE_SECONDS
 for P in LOOPS PAUSE_SECONDS; do
-  V="${!P}"
+  if [ "$P" = LOOPS ]; then V="$LOOPS"; else V="$PAUSE_SECONDS"; fi
   case "$V" in
     ''|*[!0-9]*) echo "Parameter $P must be a non-negative integer, got '$V'"; exit 1;;
   esac
@@ -95,6 +98,9 @@ echo "Target responded with HTTP $CODE"
                     // exit code 3 = some runs failed but at least one succeeded -> build becomes UNSTABLE
                     def rc = sh(returnStatus: true, script: '''#!/bin/bash
 set -uo pipefail
+LOOPS="${LOOPS:-10}"
+PAUSE_SECONDS="${PAUSE_SECONDS:-5}"
+export LOOPS PAUSE_SECONDS
 
 cd "$WORKSPACE/project"
 export OUT_DIR="$WORKSPACE/$RUN_DIR"
@@ -154,12 +160,16 @@ exit 0
             // HTML report link in the left menu of the build page (requires the "HTML Publisher" plugin)
             script {
                 try {
+                    if (!fileExists("${env.RUN_DIR}/performance-testing-essentials.summary.html")) {
+                        echo 'Lighthouse summary HTML not found; skipping HTML Publisher.'
+                    } else {
                     publishHTML(target: [
                         reportDir: "${env.RUN_DIR}",
                         reportFiles: 'performance-testing-essentials.summary.html',
                         reportName: 'Lighthouse Report',
-                        keepAll: true, alwaysLinkToLastBuild: true, allowMissing: true
+                        keepAll: true, alwaysLinkToLastBuild: true, allowMissing: false
                     ])
+                    }
                 } catch (Throwable t) {
                     echo "publishHTML is not available (install the HTML Publisher plugin): ${t.message}"
                 }
