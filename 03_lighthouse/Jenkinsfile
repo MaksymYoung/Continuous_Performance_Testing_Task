@@ -1,8 +1,15 @@
 // Jenkinsfile - Lighthouse user flow (performance-testing-essentials.js) on Linux/Ubuntu
-// sh/bash only, no PowerShell. Same logic as the former run_lighthouse.ps1:
+// sh/bash only, no PowerShell.
 //   N loops of the user flow -> one averaged HTML report (summary) + per-run reports. No InfluxDB.
-// The load model (number of loops, pause) is a build parameter ("Build with Parameters"),
-// so it can be changed without editing this file.
+// The load model (number of loops, pause) is a build parameter ("Build with Parameters").
+// Defaults are declared ONCE, in DEFAULTS below; the parameters block reads them from there and the
+// 'Init' stage exports the resolved values as environment variables, so the shell code needs no fallbacks.
+
+def DEFAULTS = [
+    LOOPS: '10', PAUSE_SECONDS: '5',
+    APP: '172.17.0.1'
+]
+def common = null   // shared helpers, loaded in the 'Init' stage
 
 pipeline {
     agent any
@@ -13,27 +20,40 @@ pipeline {
     }
 
     parameters {
-        string(name: 'LOOPS',         defaultValue: '10', description: 'Number of flow runs (loops)')
-        string(name: 'PAUSE_SECONDS', defaultValue: '5',  description: 'Pause between runs, seconds')
+        string(name: 'LOOPS',         defaultValue: DEFAULTS.LOOPS,         description: 'Number of flow runs (loops)')
+        string(name: 'PAUSE_SECONDS', defaultValue: DEFAULTS.PAUSE_SECONDS, description: 'Pause between runs, seconds')
+        string(name: 'APP',           defaultValue: DEFAULTS.APP,           description: 'Docker host gateway that Chrome maps "localhost" to (port 80)')
     }
 
     environment {
-        // ---- Paths inside the Jenkins container (Linux) ----
-        PROJECT_DIR   = '/var/jenkins_home/lighthouse_project'  // sources + node_modules (created by deploy_lighthouse_ubuntu.sh)
+        // ---- Constants (paths inside the Jenkins container) ----
+        PROJECT_DIR = '/var/jenkins_home/lighthouse_project'  // sources + node_modules (created by deploy_lighthouse_ubuntu.sh)
+        COMMON_LIB  = '/var/jenkins_home/perf_common/perf-common.groovy'  // shared helpers (copied by the deploy script)
 
-        // ---- Target application ----
         // The app (WordPress) redirects to http://localhost/, and inside the container "localhost" is the container itself.
-        // So the URL stays "localhost" and Chrome is told to resolve it to the Docker host gateway.
-        BASE_URL            = 'http://localhost'
-        HOST_RESOLVER_RULES = 'MAP localhost 172.17.0.1'   // 172.17.0.1 = Docker host gateway, reachable from the container
-        APP_CHECK_URL       = 'http://172.17.0.1:80/'      // pre-flight check, sent with "Host: localhost"
-        SCENARIO            = 'order-flow'
+        // So the URL stays "localhost" and Chrome is told to resolve it to APP (HOST_RESOLVER_RULES is derived in 'Init').
+        BASE_URL    = 'http://localhost'
+        SCENARIO    = 'order-flow'
 
         // ---- Results directory of the current build (relative to workspace) ----
-        RUN_DIR       = "results/build-${BUILD_NUMBER}"
+        RUN_DIR     = "results/build-${BUILD_NUMBER}"
     }
 
     stages {
+
+        stage('Init') {
+            steps {
+                script {
+                    if (!fileExists(env.COMMON_LIB)) {
+                        error("Missing ${env.COMMON_LIB} - run deploy_lighthouse_ubuntu.sh")
+                    }
+                    common = load(env.COMMON_LIB)
+                    common.exportParams(params, DEFAULTS)   // resolves defaults, checks numeric params, sets env vars
+                    env.HOST_RESOLVER_RULES = "MAP localhost ${env.APP}"
+                    env.APP_CHECK_URL       = "http://${env.APP}:80/"
+                }
+            }
+        }
 
         stage('Prepare') {
             steps {
@@ -47,16 +67,7 @@ NODE_MAJOR=$(node --version | sed 's/^v//; s/\\..*//')
 echo "node $(node --version), npm $(npm --version)"
 [ "$NODE_MAJOR" -ge 18 ] || { echo "Node 18+ is required (found $NODE_MAJOR)"; exit 1; }
 
-# Parameters must be non-negative integers; no upper limit on loops - that is the caller's choice
-LOOPS="${LOOPS:-10}"
-PAUSE_SECONDS="${PAUSE_SECONDS:-5}"
-export LOOPS PAUSE_SECONDS
-for P in LOOPS PAUSE_SECONDS; do
-  if [ "$P" = LOOPS ]; then V="$LOOPS"; else V="$PAUSE_SECONDS"; fi
-  case "$V" in
-    ''|*[!0-9]*) echo "Parameter $P must be a non-negative integer, got '$V'"; exit 1;;
-  esac
-done
+# No upper limit on loops - that is the caller's choice
 [ "$LOOPS" -ge 1 ] || { echo "LOOPS must be 1 or greater"; exit 1; }
 [ -f "$PROJECT_DIR/performance-testing-essentials.js" ] || { echo "Missing $PROJECT_DIR/performance-testing-essentials.js - run deploy_lighthouse_ubuntu.sh"; exit 1; }
 [ -d "$PROJECT_DIR/node_modules/lighthouse" ] && [ -d "$PROJECT_DIR/node_modules/puppeteer" ] \\
@@ -73,22 +84,10 @@ ls -la "$WORKSPACE/project"
             }
         }
 
-        // Fail fast instead of running many minutes of failing flows when the target is unreachable
         stage('Check target') {
             steps {
-                sh '''#!/bin/bash
-set -uo pipefail
-echo "Checking $APP_CHECK_URL from inside the Jenkins container ..."
-# The app (WordPress) redirects to http://localhost/ unless the Host header is "localhost"
-CODE=$(curl -s -o /dev/null -w '%{http_code}' -H "Host: localhost" --connect-timeout 5 --max-time 10 "$APP_CHECK_URL")
-if [ -z "$CODE" ] || [ "$CODE" = "000" ]; then
-  echo "ERROR: $APP_CHECK_URL is not reachable from the container (connection refused/blocked)."
-  echo "Is the wp container running (docker ps)? Is 172.17.0.1 the Docker host gateway? Fix APP_CHECK_URL and HOST_RESOLVER_RULES."
-  exit 1
-fi
-echo "Target responded with HTTP $CODE"
-[ "$CODE" = "200" ] || echo "WARNING: expected HTTP 200, got $CODE"
-'''
+                // strict: false -> a non-200 answer is only a warning (as before); unreachable still fails
+                script { common.checkTarget(url: env.APP_CHECK_URL, host: 'localhost', strict: false) }
             }
         }
 
@@ -98,9 +97,6 @@ echo "Target responded with HTTP $CODE"
                     // exit code 3 = some runs failed but at least one succeeded -> build becomes UNSTABLE
                     def rc = sh(returnStatus: true, script: '''#!/bin/bash
 set -uo pipefail
-LOOPS="${LOOPS:-10}"
-PAUSE_SECONDS="${PAUSE_SECONDS:-5}"
-export LOOPS PAUSE_SECONDS
 
 cd "$WORKSPACE/project"
 export OUT_DIR="$WORKSPACE/$RUN_DIR"
@@ -147,31 +143,13 @@ echo "Done: $OK of $LOOPS runs succeeded."
 
     post {
         always {
-            // Raw Lighthouse artifacts (traces, devtools logs) are big -> one tar.gz instead of hundreds of files
-            sh '''#!/bin/bash
-cd "$WORKSPACE/$RUN_DIR" 2>/dev/null || exit 0
-ls -d performance-testing-essentials-artifacts* >/dev/null 2>&1 \\
-  && tar czf lighthouse-raw-artifacts.tar.gz performance-testing-essentials-artifacts* \\
-  && rm -rf performance-testing-essentials-artifacts*
-exit 0
-'''
-            archiveArtifacts artifacts: 'results/build-*/**', allowEmptyArchive: true, fingerprint: true
-
-            // HTML report link in the left menu of the build page (requires the "HTML Publisher" plugin)
             script {
-                try {
-                    if (!fileExists("${env.RUN_DIR}/performance-testing-essentials.summary.html")) {
-                        echo 'Lighthouse summary HTML not found; skipping HTML Publisher.'
-                    } else {
-                    publishHTML(target: [
-                        reportDir: "${env.RUN_DIR}",
-                        reportFiles: 'performance-testing-essentials.summary.html',
-                        reportName: 'Lighthouse Report',
-                        keepAll: true, alwaysLinkToLastBuild: true, allowMissing: false
+                if (common) {
+                    // Raw Lighthouse artifacts (traces, devtools logs) are big -> one tar.gz instead of hundreds of files
+                    common.packAndArchive(env.RUN_DIR, [
+                        [archive: 'lighthouse-raw-artifacts.tar.gz', glob: 'performance-testing-essentials-artifacts*', remove: true]
                     ])
-                    }
-                } catch (Throwable t) {
-                    echo "publishHTML is not available (install the HTML Publisher plugin): ${t.message}"
+                    common.publishHtmlReport(dir: env.RUN_DIR, index: 'performance-testing-essentials.summary.html', name: 'Lighthouse Report')
                 }
             }
         }

@@ -2,8 +2,17 @@
 // sh/bash only, no PowerShell. Same idea as the JMeter Jenkinsfile:
 //   ramp-up -> steady state, one overall HTML report (no separate steady-state report).
 // The project is copied into the Jenkins container by deploy_gatling_ubuntu.sh.
-// All load parameters are build parameters ("Build with Parameters"),
-// so the number of users etc. can be changed without editing this file.
+// All load parameters are build parameters ("Build with Parameters").
+// Defaults are declared ONCE, in DEFAULTS below; the parameters block reads them from there and the
+// 'Init' stage exports the resolved values as environment variables, so the shell code needs no fallbacks.
+
+def DEFAULTS = [
+    START_USERS: '3', USERS: '5', TOTAL_DURATION_SEC: '600', RAMP_UP_SEC: '120',
+    TT_MIN: '2000', TT_MAX: '5000', CONNECT_TIMEOUT: '5000', RESPONSE_TIMEOUT: '10000',
+    MIN_SUCCESS_PCT: '99',
+    APP: '172.17.0.1', APP_PORT: '80'
+]
+def common = null   // shared helpers, loaded in the 'Init' stage
 
 pipeline {
     agent any
@@ -15,29 +24,27 @@ pipeline {
     }
 
     parameters {
-        string(name: 'START_USERS',        defaultValue: '3',     description: 'Number of virtual users at the start of the ramp-up')
-        string(name: 'USERS',              defaultValue: '5',     description: 'Number of virtual users at the end of the ramp-up (steady state)')
-        string(name: 'TOTAL_DURATION_SEC', defaultValue: '600',   description: 'Total test duration, seconds (ramp-up + steady state)')
-        string(name: 'RAMP_UP_SEC',        defaultValue: '120',   description: 'Ramp-up time, seconds')
-        string(name: 'TT_MIN',             defaultValue: '2000',  description: 'Think time min, ms')
-        string(name: 'TT_MAX',             defaultValue: '5000',  description: 'Think time max, ms')
-        string(name: 'CONNECT_TIMEOUT',    defaultValue: '5000',  description: 'HTTP connect timeout, ms')
-        string(name: 'RESPONSE_TIMEOUT',   defaultValue: '10000', description: 'HTTP response timeout, ms')
-        string(name: 'MIN_SUCCESS_PCT',    defaultValue: '99',    description: 'Assertion: minimum percentage of successful requests (0-100)')
+        string(name: 'START_USERS',        defaultValue: DEFAULTS.START_USERS,        description: 'Number of virtual users at the start of the ramp-up')
+        string(name: 'USERS',              defaultValue: DEFAULTS.USERS,              description: 'Number of virtual users at the end of the ramp-up (steady state)')
+        string(name: 'TOTAL_DURATION_SEC', defaultValue: DEFAULTS.TOTAL_DURATION_SEC, description: 'Total test duration, seconds (ramp-up + steady state)')
+        string(name: 'RAMP_UP_SEC',        defaultValue: DEFAULTS.RAMP_UP_SEC,        description: 'Ramp-up time, seconds')
+        string(name: 'TT_MIN',             defaultValue: DEFAULTS.TT_MIN,             description: 'Think time min, ms')
+        string(name: 'TT_MAX',             defaultValue: DEFAULTS.TT_MAX,             description: 'Think time max, ms')
+        string(name: 'CONNECT_TIMEOUT',    defaultValue: DEFAULTS.CONNECT_TIMEOUT,    description: 'HTTP connect timeout, ms')
+        string(name: 'RESPONSE_TIMEOUT',   defaultValue: DEFAULTS.RESPONSE_TIMEOUT,   description: 'HTTP response timeout, ms')
+        string(name: 'MIN_SUCCESS_PCT',    defaultValue: DEFAULTS.MIN_SUCCESS_PCT,    description: 'Assertion: minimum percentage of successful requests (0-100)')
+        string(name: 'APP',                defaultValue: DEFAULTS.APP,                description: 'Target application host (Docker host gateway; "localhost" inside the container is the container itself)')
+        string(name: 'APP_PORT',           defaultValue: DEFAULTS.APP_PORT,           description: 'Target application port')
     }
 
     environment {
-        // ---- Paths inside the Jenkins container (Linux) ----
+        // ---- Constants (paths inside the Jenkins container) ----
         PROJECT_DIR  = '/var/jenkins_home/gatling_project'   // pom.xml and src/ are copied here
         JAVA_HOME    = '/var/jenkins_home/jdk21'             // JDK 21 (installed automatically if missing)
         MAVEN_HOME   = '/var/jenkins_home/maven'             // Apache Maven (installed automatically if missing)
         MAVEN_VERSION = '3.9.9'
+        COMMON_LIB   = '/var/jenkins_home/perf_common/perf-common.groovy'  // shared helpers (copied by the deploy script)
 
-        // ---- Target application ----
-        // Inside the container "localhost" is the container itself, not the host!
-        // APP is the Docker host gateway: reachable from inside the Jenkins container.
-        APP          = '172.17.0.1'
-        APP_PORT     = '80'
         // The app (WordPress) redirects to its siteurl unless the Host header is "localhost" (same as in the JMeter test)
         SITE_URL     = 'http://localhost'
         HOST_HEADER  = 'localhost'
@@ -51,6 +58,18 @@ pipeline {
 
     stages {
 
+        stage('Init') {
+            steps {
+                script {
+                    if (!fileExists(env.COMMON_LIB)) {
+                        error("Missing ${env.COMMON_LIB} - run deploy_gatling_ubuntu.sh")
+                    }
+                    common = load(env.COMMON_LIB)
+                    common.exportParams(params, DEFAULTS)   // resolves defaults, checks numeric params, sets env vars
+                }
+            }
+        }
+
         stage('Prepare') {
             steps {
                 sh '''#!/bin/bash
@@ -59,25 +78,7 @@ set -euo pipefail
 echo "== Environment check =="
 whoami; uname -a
 
-# Jenkins may not export newly added build parameters on the first run.
-# Supply defaults before validating, so `set -u` cannot abort the build.
-export START_USERS="${START_USERS:-3}"
-export USERS="${USERS:-5}"
-export TOTAL_DURATION_SEC="${TOTAL_DURATION_SEC:-600}"
-export RAMP_UP_SEC="${RAMP_UP_SEC:-120}"
-export TT_MIN="${TT_MIN:-2000}"
-export TT_MAX="${TT_MAX:-5000}"
-export CONNECT_TIMEOUT="${CONNECT_TIMEOUT:-5000}"
-export RESPONSE_TIMEOUT="${RESPONSE_TIMEOUT:-10000}"
-export MIN_SUCCESS_PCT="${MIN_SUCCESS_PCT:-99}"
-
-# Parameters must be non-negative integers; no upper/lower limit on users - that is the caller's choice
-for P in START_USERS USERS TOTAL_DURATION_SEC RAMP_UP_SEC TT_MIN TT_MAX CONNECT_TIMEOUT RESPONSE_TIMEOUT MIN_SUCCESS_PCT; do
-  V="${!P:-}"
-  case "$V" in
-    ''|*[!0-9]*) echo "Parameter $P must be a non-negative integer, got '$V'"; exit 1;;
-  esac
-done
+# No upper/lower limit on users - that is the caller's choice
 [ "$START_USERS" -ge 1 ] || { echo "START_USERS must be >= 1"; exit 1; }
 [ "$USERS" -ge 1 ]       || { echo "USERS must be >= 1"; exit 1; }
 [ "$TT_MAX" -ge "$TT_MIN" ] || { echo "TT_MAX must be >= TT_MIN"; exit 1; }
@@ -116,25 +117,12 @@ ls -la "$WORKSPACE/project"
             }
         }
 
-        // Fail fast instead of running 10 minutes of 100% errors when the target is unreachable
         stage('Check target') {
             steps {
-                sh '''#!/bin/bash
-set -uo pipefail
-URL="http://$APP:$APP_PORT/"
-echo "Checking $URL (Host: $HOST_HEADER) from inside the Jenkins container ..."
-BODY=$(curl -s -H "Host: $HOST_HEADER" --connect-timeout 5 --max-time 10 -w '\\nHTTP_CODE=%{http_code}' "$URL" || true)
-CODE=$(echo "$BODY" | tail -n 1 | sed 's/HTTP_CODE=//')
-if [ -z "$CODE" ] || [ "$CODE" = "000" ]; then
-  echo "ERROR: $URL is not reachable from the container (host not resolved or connection refused/blocked)."
-  echo "Set APP in the Jenkinsfile to an address that works from inside the container."
-  exit 1
-fi
-echo "Target responded with HTTP $CODE"
-[ "$CODE" = "200" ] || { echo "ERROR: expected HTTP 200, got $CODE"; exit 1; }
-grep -q "Performance testing Essentials" <<<"$BODY" || { echo "ERROR: the home page does not contain 'Performance testing Essentials'"; exit 1; }
-echo "Home page content is OK"
-'''
+                script {
+                    common.checkTarget(url: "http://${env.APP}:${env.APP_PORT}/", host: env.HOST_HEADER,
+                                       expect: 'Performance testing Essentials')
+                }
             }
         }
 
@@ -143,15 +131,6 @@ echo "Home page content is OK"
                 sh '''#!/bin/bash
 set -uo pipefail
 export PATH="$JAVA_HOME/bin:$MAVEN_HOME/bin:$PATH"
-export START_USERS="${START_USERS:-3}"
-export USERS="${USERS:-5}"
-export TOTAL_DURATION_SEC="${TOTAL_DURATION_SEC:-600}"
-export RAMP_UP_SEC="${RAMP_UP_SEC:-120}"
-export TT_MIN="${TT_MIN:-2000}"
-export TT_MAX="${TT_MAX:-5000}"
-export CONNECT_TIMEOUT="${CONNECT_TIMEOUT:-5000}"
-export RESPONSE_TIMEOUT="${RESPONSE_TIMEOUT:-10000}"
-export MIN_SUCCESS_PCT="${MIN_SUCCESS_PCT:-99}"
 
 HOLD=$(( TOTAL_DURATION_SEC - RAMP_UP_SEC ))
 TT_CENTER=$(( (TT_MIN + TT_MAX) / 2 ))
@@ -194,7 +173,6 @@ LATEST=$(ls -dt target/gatling/*/ 2>/dev/null | head -n 1)
 if [ -n "$LATEST" ]; then
   echo "Latest Gatling report: $LATEST"
   cp -a "$LATEST" "$WORKSPACE/$RUN_DIR/report_full"
-  tar czf "$WORKSPACE/$RUN_DIR/report_full.tar.gz" -C "$WORKSPACE/$RUN_DIR" report_full
 else
   echo "No Gatling report was generated."
 fi
@@ -208,24 +186,10 @@ exit 0
 
     post {
         always {
-            // The files themselves in Build Artifacts
-            archiveArtifacts artifacts: 'results/build-*/**', allowEmptyArchive: true
-
-            // HTML report link in the left menu of the build page (requires the "HTML Publisher" plugin)
             script {
-                try {
-                    if (!fileExists("${env.RUN_DIR}/report_full/index.html")) {
-                        echo 'Gatling HTML report is absent; skipping HTML publication.'
-                    } else {
-                    publishHTML(target: [
-                        reportDir: "${env.RUN_DIR}/report_full",
-                        reportFiles: 'index.html',
-                        reportName: 'Gatling Report',
-                        keepAll: true, alwaysLinkToLastBuild: true, allowMissing: false
-                    ])
-                    }
-                } catch (Throwable t) {
-                    echo "publishHTML is not available (install the HTML Publisher plugin): ${t.message}"
+                if (common) {
+                    common.packAndArchive(env.RUN_DIR, [[archive: 'report_full.tar.gz', glob: 'report_full']])
+                    common.publishHtmlReport(dir: "${env.RUN_DIR}/report_full", index: 'index.html', name: 'Gatling Report')
                 }
             }
         }

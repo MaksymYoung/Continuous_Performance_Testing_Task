@@ -51,6 +51,14 @@ done
 [ -d "$SRC/templates" ] || { echo "ERROR: folder templates/ not found in $SRC"; exit 1; }
 echo "Jenkins container: $JENKINS_CONTAINER - running"
 
+# Shared pipeline helpers (the Jenkinsfile loads them with `load`)
+COMMON_SRC="${COMMON_SRC:-$SRC/../perf-common.groovy}"
+[ -f "$COMMON_SRC" ] || { echo "ERROR: perf-common.groovy not found ($COMMON_SRC)"; exit 1; }
+docker exec -u root "$JENKINS_CONTAINER" mkdir -p /var/jenkins_home/perf_common || exit 1
+docker cp "$COMMON_SRC" "$JENKINS_CONTAINER:/var/jenkins_home/perf_common/perf-common.groovy" || { echo "ERROR: cannot copy perf-common.groovy"; exit 1; }
+docker exec -u root "$JENKINS_CONTAINER" chown -R jenkins:jenkins /var/jenkins_home/perf_common
+echo "Shared helpers: perf-common.groovy copied"
+
 echo '_________________________________'
 echo "######## STEP 1 ################"
 echo "Checking Node.js (18+) and the system libraries for Chromium in the container"
@@ -132,12 +140,12 @@ CODE=$(docker exec "$JENKINS_CONTAINER" curl -s -o /dev/null -w '%{http_code}' -
 echo "HTTP response code is $CODE"
 if [ "$CODE" != "200" ]; then
   echo "ALARM: the app is not reachable (or not answering 200) from the Jenkins container. Is the wp container running (docker ps)?"
-  echo "If the Docker host gateway is not $APP_HOST, check it and fix APP_CHECK_URL and HOST_RESOLVER_RULES in the Jenkinsfile:"
+  echo "If the Docker host gateway is not $APP_HOST, check it and fix the APP default in the Jenkinsfile (or the APP build parameter):"
   docker exec "$JENKINS_CONTAINER" bash -c "getent hosts host.docker.internal; ip route 2>/dev/null | grep default"
   exit 1
 fi
-if ! grep -q "MAP localhost $APP_HOST" "$SRC/Jenkinsfile"; then
-  echo "WARNING: HOST_RESOLVER_RULES in the Jenkinsfile is not 'MAP localhost $APP_HOST' - make sure it points to an address that works from the container."
+if ! grep -qE "APP: *'$APP_HOST'" "$SRC/Jenkinsfile"; then
+  echo "WARNING: the APP default (DEFAULTS map) in the Jenkinsfile is not '$APP_HOST' - make sure it points to an address that works from the container."
 fi
 
 echo '_________________________________'

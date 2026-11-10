@@ -1,8 +1,16 @@
 // Jenkinsfile - JMeter (PerformanceEssentials.jmx) on Linux/Ubuntu
 // sh/bash only, no PowerShell.
 // Load model: ramp-up -> steady state -> shutdown, one overall HTML report.
-// All load parameters are build parameters ("Build with Parameters"),
-// so the number of users etc. can be changed without editing this file.
+// All load parameters are build parameters ("Build with Parameters").
+// Defaults are declared ONCE, in DEFAULTS below; the parameters block reads them from there and the
+// 'Init' stage exports the resolved values as environment variables, so the shell code needs no fallbacks.
+
+def DEFAULTS = [
+    USERS: '4', TOTAL_DURATION_SEC: '600', RAMP_UP_SEC: '30', SHUTDOWN_SEC: '10',
+    TT_MIN: '2000', TT_MAX: '5000', CONNECT_TIMEOUT: '5000', RESPONSE_TIMEOUT: '10000',
+    APP: '172.17.0.1', APP_PORT: '80'
+]
+def common = null   // shared helpers, loaded in the 'Init' stage
 
 pipeline {
     agent any
@@ -13,41 +21,42 @@ pipeline {
     }
 
     parameters {
-        string(name: 'USERS',              defaultValue: '4',    description: 'Number of virtual users')
-        string(name: 'TOTAL_DURATION_SEC', defaultValue: '600',  description: 'Total test duration, seconds (ramp-up + hold + shutdown)')
-        string(name: 'RAMP_UP_SEC',        defaultValue: '30',   description: 'Ramp-up time, seconds')
-        string(name: 'SHUTDOWN_SEC',       defaultValue: '10',   description: 'Shutdown time, seconds')
-        string(name: 'TT_MIN',             defaultValue: '2000', description: 'Think time min, ms')
-        string(name: 'TT_MAX',             defaultValue: '5000', description: 'Think time max, ms')
-        string(name: 'CONNECT_TIMEOUT',    defaultValue: '5000', description: 'HTTP connect timeout, ms')
-        string(name: 'RESPONSE_TIMEOUT',   defaultValue: '10000', description: 'HTTP response timeout, ms')
-        string(name: 'APP',                defaultValue: '172.17.0.1', description: 'Target application host (must be reachable from the Jenkins container)')
-        string(name: 'APP_PORT',           defaultValue: '80',   description: 'Target application port (must match "port" in the JMX)')
+        string(name: 'USERS',              defaultValue: DEFAULTS.USERS,              description: 'Number of virtual users')
+        string(name: 'TOTAL_DURATION_SEC', defaultValue: DEFAULTS.TOTAL_DURATION_SEC, description: 'Total test duration, seconds (ramp-up + hold + shutdown)')
+        string(name: 'RAMP_UP_SEC',        defaultValue: DEFAULTS.RAMP_UP_SEC,        description: 'Ramp-up time, seconds')
+        string(name: 'SHUTDOWN_SEC',       defaultValue: DEFAULTS.SHUTDOWN_SEC,       description: 'Shutdown time, seconds')
+        string(name: 'TT_MIN',             defaultValue: DEFAULTS.TT_MIN,             description: 'Think time min, ms')
+        string(name: 'TT_MAX',             defaultValue: DEFAULTS.TT_MAX,             description: 'Think time max, ms')
+        string(name: 'CONNECT_TIMEOUT',    defaultValue: DEFAULTS.CONNECT_TIMEOUT,    description: 'HTTP connect timeout, ms')
+        string(name: 'RESPONSE_TIMEOUT',   defaultValue: DEFAULTS.RESPONSE_TIMEOUT,   description: 'HTTP response timeout, ms')
+        string(name: 'APP',                defaultValue: DEFAULTS.APP,                description: 'Target application host (must be reachable from the Jenkins container)')
+        string(name: 'APP_PORT',           defaultValue: DEFAULTS.APP_PORT,           description: 'Target application port (must match "port" in the JMX)')
     }
 
     environment {
-        // Defaults also apply when the first build has no parameter values.
-        USERS = "${params.USERS ?: '4'}"
-        TOTAL_DURATION_SEC = "${params.TOTAL_DURATION_SEC ?: '600'}"
-        RAMP_UP_SEC = "${params.RAMP_UP_SEC ?: '30'}"
-        SHUTDOWN_SEC = "${params.SHUTDOWN_SEC ?: '10'}"
-        TT_MIN = "${params.TT_MIN ?: '2000'}"
-        TT_MAX = "${params.TT_MAX ?: '5000'}"
-        CONNECT_TIMEOUT = "${params.CONNECT_TIMEOUT ?: '5000'}"
-        RESPONSE_TIMEOUT = "${params.RESPONSE_TIMEOUT ?: '10000'}"
-        APP = "${params.APP ?: '172.17.0.1'}"
-        APP_PORT = "${params.APP_PORT ?: '80'}"
-
-        // ---- Paths inside the Jenkins container (Linux) ----
+        // ---- Constants (paths inside the Jenkins container) ----
         PROJECT_DIR  = '/var/jenkins_home/perf_project'      // jmx and csv/ are copied here
         JMETER_HOME  = '/opt/apache-jmeter'                  // JMeter 5.6.3 + jpgc-casutg plugin
         JOLOKIA_JAR  = '/opt/monitoring/jolokia-agent.jar'   // optional: the agent is skipped if the file does not exist
+        COMMON_LIB   = '/var/jenkins_home/perf_common/perf-common.groovy'  // shared helpers (copied by the deploy script)
 
         // ---- Results directory of the current build (relative to workspace) ----
         RUN_DIR      = "results/build-${BUILD_NUMBER}"
     }
 
     stages {
+
+        stage('Init') {
+            steps {
+                script {
+                    if (!fileExists(env.COMMON_LIB)) {
+                        error("Missing ${env.COMMON_LIB} - run deploy_jmeter_ubuntu.sh")
+                    }
+                    common = load(env.COMMON_LIB)
+                    common.exportParams(params, DEFAULTS)   // resolves defaults, checks numeric params, sets env vars
+                }
+            }
+        }
 
         stage('Prepare') {
             steps {
@@ -57,28 +66,9 @@ set -euo pipefail
 echo "== Environment check =="
 whoami; uname -a; java -version 2>&1 | head -1
 
-# On the first build Jenkins may not have populated parameter environment variables yet.
-# Supply defaults before enabling strict validation; avoid indirect expansion with unset values.
-export USERS="${USERS:-4}"
-export TOTAL_DURATION_SEC="${TOTAL_DURATION_SEC:-600}"
-export RAMP_UP_SEC="${RAMP_UP_SEC:-30}"
-export SHUTDOWN_SEC="${SHUTDOWN_SEC:-10}"
-export TT_MIN="${TT_MIN:-2000}"
-export TT_MAX="${TT_MAX:-5000}"
-export CONNECT_TIMEOUT="${CONNECT_TIMEOUT:-5000}"
-export RESPONSE_TIMEOUT="${RESPONSE_TIMEOUT:-10000}"
-export APP="${APP:-172.17.0.1}"
-export APP_PORT="${APP_PORT:-80}"
-
-for P in USERS TOTAL_DURATION_SEC RAMP_UP_SEC SHUTDOWN_SEC TT_MIN TT_MAX CONNECT_TIMEOUT RESPONSE_TIMEOUT APP_PORT; do
-  V="$(printenv "$P" || true)"
-  case "$V" in
-    ''|*[!0-9]*) echo "Parameter $P must be a non-negative integer, got '$V'"; exit 1;;
-  esac
-done
 [ "$USERS" -ge 1 ] || { echo "USERS must be >= 1"; exit 1; }
 [ "$TT_MAX" -ge "$TT_MIN" ] || { echo "TT_MAX must be >= TT_MIN"; exit 1; }
-[ $(( TOTAL_DURATION_SEC - RAMP_UP_SEC - SHUTDOWN_SEC )) -gt 0 ] \
+[ $(( TOTAL_DURATION_SEC - RAMP_UP_SEC - SHUTDOWN_SEC )) -gt 0 ] \\
   || { echo "TOTAL_DURATION_SEC must be greater than RAMP_UP_SEC + SHUTDOWN_SEC"; exit 1; }
 
 [ -x "$JMETER_HOME/bin/jmeter" ]                || { echo "JMeter not found: $JMETER_HOME/bin/jmeter"; exit 1; }
@@ -95,23 +85,10 @@ ls -la "$WORKSPACE/project"
             }
         }
 
-        // Fail fast instead of running 10 minutes of 100% errors when the target is unreachable
         stage('Check target') {
             steps {
-                sh '''#!/bin/bash
-set -uo pipefail
-URL="http://$APP:$APP_PORT/"
-echo "Checking $URL from inside the Jenkins container ..."
-# The app (WordPress) redirects to http://localhost/ unless the Host header is "localhost" - same header as in the JMX
-CODE=$(curl -s -o /dev/null -w '%{http_code}' -H "Host: localhost" --connect-timeout 5 --max-time 10 "$URL")
-if [ -z "$CODE" ] || [ "$CODE" = "000" ]; then
-  echo "ERROR: $URL is not reachable from the container (host not resolved or connection refused/blocked)."
-  echo "Set the APP build parameter to an address that works from inside the container."
-  exit 1
-fi
-echo "Target responded with HTTP $CODE"
-[ "$CODE" = "200" ] || { echo "ERROR: expected HTTP 200, got $CODE"; exit 1; }
-'''
+                // The app (WordPress) redirects to http://localhost/ unless the Host header is "localhost" - same header as in the JMX
+                script { common.checkTarget(url: "http://${env.APP}:${env.APP_PORT}/", host: 'localhost') }
             }
         }
 
@@ -167,25 +144,10 @@ if [ "$RC" -ne 0 ]; then echo "JMeter finished with exit code $RC. See console.l
 
     post {
         always {
-            // Archive for download + the files themselves in Build Artifacts
-            sh '''#!/bin/bash
-cd "$WORKSPACE/$RUN_DIR" 2>/dev/null || exit 0
-[ -d report_full ]   && tar czf report_full.tar.gz   report_full
-exit 0
-'''
-            archiveArtifacts artifacts: "${env.RUN_DIR}/**", allowEmptyArchive: true, fingerprint: true
-
-            // HTML report link in the left menu of the build page (requires the "HTML Publisher" plugin)
             script {
-                try {
-                    publishHTML(target: [
-                        reportDir: "${env.RUN_DIR}/report_full",
-                        reportFiles: 'index.html',
-                        reportName: 'JMeter Report',
-                        keepAll: true, alwaysLinkToLastBuild: true, allowMissing: true
-                    ])
-                } catch (Throwable t) {
-                    echo "publishHTML is not available (install the HTML Publisher plugin): ${t.message}"
+                if (common) {
+                    common.packAndArchive(env.RUN_DIR, [[archive: 'report_full.tar.gz', glob: 'report_full']])
+                    common.publishHtmlReport(dir: "${env.RUN_DIR}/report_full", index: 'index.html', name: 'JMeter Report')
                 }
             }
         }
